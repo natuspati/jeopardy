@@ -42,6 +42,6 @@ next-env.d.ts
 # Pytest
 **/.pytest_cache
 
-# Python
+# Python byte compiled files
 **/__pycache__
 **/*.pyc
