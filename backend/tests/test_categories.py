@@ -1,13 +1,11 @@
-from datetime import datetime
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List
 
 import pytest
 
 from fastapi import FastAPI, status
 from async_asgi_testclient import TestClient
-from fastapi.encoders import jsonable_encoder
 
-from app.models.category import CategoryPublic, CategoryInDB, CategoryCreate
+from app.models.category import CategoryPublic, CategoryCreate
 
 pytestmark = pytest.mark.asyncio
 
@@ -34,7 +32,7 @@ class TestCategoryRoutes:
 
 class TestGetCategory:
     """
-    Check list and get by categories.
+    Check list and get by categories
     """
     
     async def test_get_all_categories(
@@ -67,7 +65,6 @@ class TestGetCategory:
         assert res.status_code == status.HTTP_200_OK
         
         fetched_category = CategoryPublic.model_construct(**res.json())
-        
         assert fetched_category == new_empty_category
     
     async def test_get_category_by_wrong_id_raises_not_found(
@@ -81,7 +78,7 @@ class TestGetCategory:
 
 class TestCreateCategory:
     """
-    Check category creation with and without questions, with and without valid input.
+    Check category creation with and without questions, with and without valid input
     """
     
     async def test_valid_input_crates_empty_category(
@@ -99,7 +96,7 @@ class TestCreateCategory:
         assert created_category["name"] == new_empty_category_dict.name
         assert created_category["questions"] == []
     
-    async def test_valid_input_crates_populated_category(
+    async def test_valid_input_creates_populated_category(
             self,
             app: FastAPI,
             client: TestClient,
@@ -128,6 +125,7 @@ class TestCreateCategory:
                 ({}, 422),
                 ({"name": 1}, 422),
                 ({"name": None}, 422),
+                ({"name": ""}, 422),
                 ({1: "name"}, 422),
                 ({"questions": "question"}, 422),
                 ({"name": "test", "questions": "question"}, 422),
@@ -135,7 +133,13 @@ class TestCreateCategory:
                     {"question": None, "answer": "answer", "value": 10}
                 ]}, 422),
                 ({"name": "test", "questions": [
+                    {"question": "", "answer": "answer", "value": 10}
+                ]}, 422),
+                ({"name": "test", "questions": [
                     {"question": "question", "answer": None, "value": 10}
+                ]}, 422),
+                ({"name": "test", "questions": [
+                    {"question": "question", "answer": "", "value": 10}
                 ]}, 422),
                 ({"name": "test", "questions": [
                     {"question": "question", "answer": "answer", "value": None}
@@ -146,9 +150,12 @@ class TestCreateCategory:
                 ({"name": "test", "questions": [
                     {"question": "question", "answer": "answer", "value": 0}
                 ]}, 422),
+                ({"name": "test", "questions": [
+                    {"question": "question", "answer": "answer", "value": 1.5}
+                ]}, 422),
         ),
     )
-    async def test_invalid_input_for_create_category_raises_error(
+    async def test_invalid_input_create_category_raises_error(
             self,
             app: FastAPI,
             client: TestClient,
@@ -172,7 +179,7 @@ class TestUpdateCategory:
                 (["name"], ["updated category name"]),
         ),
     )
-    async def test_update_category_with_valid_input(
+    async def test_valid_input_updates_category(
             self,
             app: FastAPI,
             client: TestClient,
@@ -195,21 +202,22 @@ class TestUpdateCategory:
             assert fetched_category.get(attrs_to_change[i]) != getattr(new_empty_category, attrs_to_change[i])
             assert fetched_category.get(attrs_to_change[i]) == values[i]
         # make sure that no other attributes' values have changed
-        for attr, value in fetched_category.items():
-            if attr not in attrs_to_change:
-                assert getattr(new_empty_category, attr) == value
+        for key, value in fetched_category.items():
+            if key not in attrs_to_change:
+                assert getattr(new_empty_category, key) == value
     
     @pytest.mark.parametrize(
         "payload, status_code",
         (
                 ({"name": None}, 422),
+                ({"name": ""}, 422),
                 ({}, 422),
                 ({"questions": [
                     {"question": "Test question", "answer": "Test answer", "value": 10}
                 ]}, 422)
         ),
     )
-    async def test_update_category_with_invalid_input_raises_error(
+    async def test_invalid_input_update_category_raises_error(
             self,
             app: FastAPI,
             client: TestClient,

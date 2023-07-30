@@ -1,4 +1,4 @@
-from typing import List, Annotated
+from typing import List
 
 from fastapi import APIRouter, Body, Depends
 

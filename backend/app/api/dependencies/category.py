@@ -1,9 +1,9 @@
-from fastapi import Path, Depends, HTTPException, Body
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
+from fastapi import Path, Depends, HTTPException
+from starlette.status import HTTP_404_NOT_FOUND
 
 from app.api.dependencies.database import get_repository
 from app.db.repositories.categories import CategoryRepository
-from app.models.category import CategoryPublic, CategoryUpdate, CategoryInDB
+from app.models.category import CategoryInDB
 
 
 async def get_category_by_id_from_path(

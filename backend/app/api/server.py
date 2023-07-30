@@ -30,8 +30,3 @@ def get_application():
 
 
 app = get_application()
-
-
-@app.get('/api/test/')
-def test_route():
-    return {'text': 'Hello world'}

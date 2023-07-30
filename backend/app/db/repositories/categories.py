@@ -9,7 +9,8 @@ from app.db.repositories.base import BaseRepository
 from app.db.repositories.questions import QuestionRepository
 
 from app.models.category import CategoryPublic, CategoryInDB, CategoryCreate, CategoryUpdate
-from app.models.question import QuestionPublic, QuestionCreate
+from app.models.core import PyObjectId
+from app.models.question import QuestionCreate
 
 
 class CategoryRepository(BaseRepository):
@@ -44,9 +45,11 @@ class CategoryRepository(BaseRepository):
     async def get_category_by_id(
             self,
             *,
-            category_id: str,
+            category_id: str | PyObjectId,
     ) -> CategoryInDB | None:
-        fetched_category = await self.collection.find_one({"_id": ObjectId(category_id)})
+        fetched_category = await self.collection.find_one(
+            {"_id": ObjectId(category_id) if isinstance(category_id, str) else category_id}
+        )
         if fetched_category:
             return CategoryInDB(**fetched_category)
     
@@ -66,18 +69,21 @@ class CategoryRepository(BaseRepository):
         encoded_new_category = jsonable_encoder(create_data)
         inserted_new_category = await self.collection.insert_one(encoded_new_category)
         
+        if not inserted_new_category.acknowledged:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Operation on category {category.id} could not be acknowledged"
+            )
+        
+        fetched_new_category = await self.get_category_by_id(category_id=inserted_new_category.inserted_id)
+        
         if new_questions:
             [await question_repo.create_question(
                 question=QuestionCreate.model_validate(question),
-                category_id=str(inserted_new_category.inserted_id),
-                fetch=False
+                category=fetched_new_category
             ) for question in new_questions]
         
-        fetched_new_category = await self.collection.find_one(
-            {"_id": inserted_new_category.inserted_id}
-        )
-        
-        return await self.populate_category(category=CategoryInDB(**fetched_new_category))
+        return await self.populate_category(category=fetched_new_category)
     
     async def update_category_by_id(
             self,
@@ -94,7 +100,7 @@ class CategoryRepository(BaseRepository):
         
         # If no changes are submitted, raise 304 error
         if not update_data:
-            raise HTTPException(status_code=304, detail=f"Category {category.name} is not modified")
+            raise HTTPException(status_code=304, detail=f"Category {category.id} is not modified")
         
         updated_category = category.model_copy(update=update_data)
         encoded_updated_category = jsonable_encoder(updated_category)
@@ -103,12 +109,18 @@ class CategoryRepository(BaseRepository):
             {"_id": updated_category.id}, {"$set": encoded_updated_category}
         )
         
-        if (
-                fetched_updated_category := await self.collection.find_one({"_id": updated_category.id})
-        ) is None:
-            raise HTTPException(status_code=404, detail=f"Category {category.name} not found")
+        if not inserted_category.acknowledged:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Operation on category {category.id} could not be acknowledged"
+            )
         
-        return CategoryInDB(**fetched_updated_category)
+        if (
+                fetched_updated_category := await self.get_category_by_id(category_id=updated_category.id)
+        ) is None:
+            raise HTTPException(status_code=404, detail=f"Category {category.id} not found")
+        
+        return fetched_updated_category
     
     async def delete_category_by_id(
             self,
@@ -116,17 +128,15 @@ class CategoryRepository(BaseRepository):
             category: CategoryInDB
     ) -> None:
         """
-        
+        Delete category by its id. Removes related questions.
         """
         delete_result = await self.collection.delete_one({"_id": category.id})
         
         if delete_result.deleted_count != 1:
-            raise HTTPException(status_code=404, detail=f"Category {category.name} not found")
+            raise HTTPException(status_code=404, detail=f"Category {category.id} not found")
         
         # Delete related questions to the category
-        deleted_question_count = await self.question_repo.delete_questions_for_category(category_id=str(category.id))
-        
-        return None
+        await self.question_repo.delete_questions_for_category(category_id=category.id)
     
     async def populate_category(
             self,
@@ -137,7 +147,7 @@ class CategoryRepository(BaseRepository):
         Populate Category with its questions
         """
         questions = await self.question_repo.list_questions_for_category(
-            category_id=str(category.id)
+            category_id=category.id
         )
         
         # Merge category information with queried questions

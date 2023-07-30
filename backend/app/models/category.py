@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import Optional, List
-from bson.objectid import ObjectId
 
-from pydantic import ConfigDict
+from pydantic import Field
 
 from app.models.core import IDModelMixin, CoreModel
 
@@ -16,12 +15,12 @@ class CategoryBase(CoreModel):
 
 
 class CategoryCreate(CategoryBase):
-    name: str
+    name: str = Field(min_length=1)
     questions: Optional[List[QuestionCreate]] = None
 
 
 class CategoryUpdate(CategoryBase):
-    name: str
+    name: str = Field(min_length=1)
 
 
 class CategoryInDB(IDModelMixin, CategoryBase):
