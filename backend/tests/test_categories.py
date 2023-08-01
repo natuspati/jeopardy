@@ -15,8 +15,8 @@ class TestCategoryRoutes:
     Check each category route to ensure none return 404s
     """
     
-    async def test_routes_exist(self, app: FastAPI, client: TestClient, new_empty_category: CategoryPublic) -> None:
-        category_id = new_empty_category.id
+    async def test_routes_exist(self, app: FastAPI, client: TestClient, empty_category: CategoryPublic) -> None:
+        category_id = empty_category.id
         
         res = await client.get(app.url_path_for("category:get-all"))
         assert res.status_code != status.HTTP_404_NOT_FOUND
@@ -39,7 +39,7 @@ class TestGetCategory:
             self,
             app: FastAPI,
             client: TestClient,
-            new_categories_list: List[CategoryPublic]
+            category_list: List[CategoryPublic]
     ) -> None:
         res = await client.get(
             app.url_path_for("category:get-all")
@@ -48,7 +48,7 @@ class TestGetCategory:
         assert isinstance(res.json(), list)
         assert len(res.json()) > 0
         
-        dumped_category_list = [c.model_dump() for c in new_categories_list]
+        dumped_category_list = [c.model_dump() for c in category_list]
         for fetched_category, created_category in zip(res.json(), dumped_category_list):
             assert fetched_category["id"] == created_category["id"]
             assert fetched_category["name"] == created_category["name"]
@@ -57,18 +57,21 @@ class TestGetCategory:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic
+            empty_category: CategoryPublic
     ) -> None:
         res = await client.get(
-            app.url_path_for("category:get-by-id", category_id=new_empty_category.id)
+            app.url_path_for("category:get-by-id", category_id=empty_category.id)
         )
         assert res.status_code == status.HTTP_200_OK
         
         fetched_category = CategoryPublic.model_construct(**res.json())
-        assert fetched_category == new_empty_category
+        assert fetched_category == empty_category
     
     async def test_get_category_by_wrong_id_raises_not_found(
-            self, app: FastAPI, client: TestClient, random_object_id_str: str
+            self,
+            app: FastAPI,
+            client: TestClient,
+            random_object_id_str: str
     ):
         res = await client.get(
             app.url_path_for("category:get-by-id", category_id=random_object_id_str)
@@ -85,34 +88,34 @@ class TestCreateCategory:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category_dict: CategoryCreate
+            new_empty_category_instance: CategoryCreate
     ) -> None:
         res = await client.post(
-            app.url_path_for("category:create"), json=new_empty_category_dict.model_dump()
+            app.url_path_for("category:create"), json=new_empty_category_instance.model_dump()
         )
         assert res.status_code == status.HTTP_201_CREATED
         
         created_category = res.json()
-        assert created_category["name"] == new_empty_category_dict.name
+        assert created_category["name"] == new_empty_category_instance.name
         assert created_category["questions"] == []
     
     async def test_valid_input_creates_populated_category(
             self,
             app: FastAPI,
             client: TestClient,
-            new_populated_category_dict: CategoryCreate
+            new_populated_category_instance: CategoryCreate
     ) -> None:
         res = await client.post(
-            app.url_path_for("category:create"), json=new_populated_category_dict.model_dump()
+            app.url_path_for("category:create"), json=new_populated_category_instance.model_dump()
         )
         assert res.status_code == status.HTTP_201_CREATED
         
         created_category = res.json()
-        assert created_category["name"] == new_populated_category_dict.name
+        assert created_category["name"] == new_populated_category_instance.name
         
         for fetched_question, created_question in zip(
                 created_category["questions"],
-                new_populated_category_dict.questions
+                new_populated_category_instance.questions
         ):
             assert fetched_question["question"] == created_question.question
             assert fetched_question["answer"] == created_question.answer
@@ -183,28 +186,28 @@ class TestUpdateCategory:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
+            empty_category: CategoryPublic,
             attrs_to_change: List[str],
             values: List[str],
     ) -> None:
         category_update = {attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))}
         res = await client.put(
-            app.url_path_for("category:update-by-id", category_id=new_empty_category.id),
+            app.url_path_for("category:update-by-id", category_id=empty_category.id),
             json=category_update
         )
         assert res.status_code == status.HTTP_200_OK
         
         fetched_category = res.json()
-        assert fetched_category["id"] == new_empty_category.id
+        assert fetched_category["id"] == empty_category.id
         
         # make sure that any attribute we updated has changed to the correct value
         for i in range(len(attrs_to_change)):
-            assert fetched_category.get(attrs_to_change[i]) != getattr(new_empty_category, attrs_to_change[i])
+            assert fetched_category.get(attrs_to_change[i]) != getattr(empty_category, attrs_to_change[i])
             assert fetched_category.get(attrs_to_change[i]) == values[i]
         # make sure that no other attributes' values have changed
         for key, value in fetched_category.items():
             if key not in attrs_to_change:
-                assert getattr(new_empty_category, key) == value
+                assert getattr(empty_category, key) == value
     
     @pytest.mark.parametrize(
         "payload, status_code",
@@ -221,12 +224,12 @@ class TestUpdateCategory:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
+            empty_category: CategoryPublic,
             payload: Dict,
             status_code: int
     ) -> None:
         res = await client.put(
-            app.url_path_for("category:update-by-id", category_id=new_empty_category.id),
+            app.url_path_for("category:update-by-id", category_id=empty_category.id),
             json=payload
         )
         assert res.status_code == status_code
@@ -253,10 +256,10 @@ class TestDeleteCategory:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic
+            empty_category: CategoryPublic
     ) -> None:
         res = await client.delete(
-            app.url_path_for("category:delete-by-id", category_id=new_empty_category.id)
+            app.url_path_for("category:delete-by-id", category_id=empty_category.id)
         )
         assert res.status_code == status.HTTP_204_NO_CONTENT
     

@@ -47,7 +47,7 @@ async def get_question_by_id(
     name="question:create"
 )
 async def create_new_question(
-        question: QuestionCreate = Body(...),
+        question: QuestionCreate = Body(),
         category: CategoryInDB = Depends(get_category_by_id_from_path),
         question_repo: QuestionRepository = Depends(get_repository(QuestionRepository))
 ) -> QuestionPublic:
@@ -61,7 +61,7 @@ async def create_new_question(
     name="question:update-by-id"
 )
 async def update_question_by_id(
-        question_update: QuestionUpdate = Body(...),
+        question_update: QuestionUpdate = Body(),
         question: QuestionPublic = Depends(get_question_by_id_from_path),
         question_repo: QuestionRepository = Depends(get_repository(QuestionRepository)),
 ) -> QuestionPublic:

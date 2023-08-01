@@ -3,6 +3,8 @@ import os
 import time
 import binascii
 from typing import List, Callable
+from random import choice
+from string import ascii_uppercase
 
 import pytest
 import pytest_asyncio
@@ -14,8 +16,10 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.config import DATABASE_URL, DATABASE_NAME
 from app.db.repositories.categories import CategoryRepository
 from app.db.repositories.questions import QuestionRepository
+from app.db.repositories.users import UserRepository
 from app.models.category import CategoryCreate, CategoryPublic
 from app.models.question import QuestionCreate
+from app.models.user import UserCreate, UserInDB
 
 
 @pytest.fixture(scope="session")
@@ -52,89 +56,103 @@ async def client(app: FastAPI) -> TestClient:
 
 
 @pytest_asyncio.fixture
-def new_empty_category_dict() -> CategoryCreate:
+def new_user_instance() -> UserCreate:
+    random_string = ''.join(choice(ascii_uppercase) for i in range(12))
+    return UserCreate(
+        email=f"user_{random_string}@mail.io",
+        username=f"user_{random_string}",
+        password=f"{random_string}"
+    )
+
+
+@pytest_asyncio.fixture
+def test_user_instance() -> UserCreate:
+    return UserCreate(
+        email=f"test_user@mail.io",
+        username=f"testuser",
+        password=f"testpassword"
+    )
+
+
+@pytest_asyncio.fixture
+async def test_user(
+        db: AsyncIOMotorDatabase,
+        test_user_instance: UserCreate
+) -> UserInDB:
+    user_repo = UserRepository(db)
+    return await user_repo.register_new_user(new_user=test_user_instance)
+
+
+@pytest_asyncio.fixture
+def new_empty_category_instance() -> CategoryCreate:
     return CategoryCreate(
         name="Test empty category",
     )
 
 
 @pytest_asyncio.fixture
-def new_populated_category_dict(new_question_factory: Callable) -> CategoryCreate:
+def new_populated_category_instance(question_factory: Callable) -> CategoryCreate:
     return CategoryCreate(
         name="Test populated category",
         questions=[
-            new_question_factory(i) for i in range(3)
+            question_factory(i) for i in range(3)
         ]
     )
 
 
 @pytest_asyncio.fixture
-async def new_empty_category(
+async def empty_category(
         db: AsyncIOMotorDatabase,
-        new_empty_category_dict: CategoryCreate,
+        new_empty_category_instance: CategoryCreate,
 ) -> CategoryPublic:
     category_repo = CategoryRepository(db)
     question_repo = QuestionRepository(db)
-    
-    empty_category = new_empty_category_dict
-    
-    created_empty_category = await category_repo.create_category(
-        category=empty_category,
+    return await category_repo.create_category(
+        category=new_empty_category_instance,
         question_repo=question_repo
     )
-    
-    return created_empty_category
 
 
 @pytest_asyncio.fixture
-async def new_populated_category(
+async def category_with_one_question(
         db: AsyncIOMotorDatabase,
-        new_populated_category_dict: CategoryCreate
+        question_factory: Callable,
 ) -> CategoryPublic:
     category_repo = CategoryRepository(db)
     question_repo = QuestionRepository(db)
-    
-    populated_category = new_populated_category_dict
-    
-    created_populated_category = await category_repo.create_category(
-        category=populated_category,
-        question_repo=question_repo
-    )
-    
-    return created_populated_category
-
-
-@pytest_asyncio.fixture
-async def new_category_with_one_question(
-        db: AsyncIOMotorDatabase,
-        new_question_factory: Callable,
-) -> CategoryPublic:
-    category_repo = CategoryRepository(db)
-    question_repo = QuestionRepository(db)
-    
     populated_category = CategoryCreate(
         name="Test category with one question",
-        questions=[new_question_factory(0)]
+        questions=[question_factory(0)]
     )
-    
-    created_populated_category = await category_repo.create_category(
+    return await category_repo.create_category(
         category=populated_category,
         question_repo=question_repo
     )
-    
-    return created_populated_category
 
 
 @pytest_asyncio.fixture
-async def new_categories_list(
-        new_empty_category: CategoryPublic,
-        new_category_with_one_question: CategoryPublic
+async def category_with_three_questions(
+        db: AsyncIOMotorDatabase,
+        new_populated_category_instance: CategoryCreate
+) -> CategoryPublic:
+    category_repo = CategoryRepository(db)
+    question_repo = QuestionRepository(db)
+    return await category_repo.create_category(
+        category=new_populated_category_instance,
+        question_repo=question_repo
+    )
+
+
+@pytest_asyncio.fixture
+async def category_list(
+        empty_category: CategoryPublic,
+        category_with_one_question: CategoryPublic
 ) -> List[CategoryPublic]:
-    return [new_empty_category, new_category_with_one_question]
+    return [empty_category, category_with_one_question]
 
 
 @pytest_asyncio.fixture
-def new_question_factory() -> Callable:
+def question_factory() -> Callable:
     def _new_question(i: int) -> QuestionCreate:
         return QuestionCreate(
             question=f"Test question {i}",

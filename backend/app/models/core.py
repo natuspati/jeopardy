@@ -1,8 +1,10 @@
-from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
+from datetime import datetime
+from bson import ObjectId
 
-from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, field_serializer, ConfigDict, GetCoreSchemaHandler
+from pydantic import (
+    BaseModel, Field, field_serializer, ConfigDict, GetCoreSchemaHandler, field_validator
+)
 from pydantic_core import core_schema
 
 
@@ -41,5 +43,19 @@ class IDModelMixin(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, validation_alias="_id")
     
     @field_serializer('id')
-    def serialize_id(self, dt: PyObjectId, _info):
-        return str(dt)
+    def serialize_id(self, object_id: PyObjectId, _info):
+        return str(object_id)
+
+
+class UpdatedAtModelMixin(BaseModel):
+    updated_at: Optional[datetime] = datetime.now()
+    
+    @field_validator("updated_at", mode="before")  # noqa
+    @classmethod
+    def default_datetime(cls, value: datetime) -> datetime:
+        print(value)
+        return value or datetime.now()
+    
+    # @field_serializer('updated_at')
+    # def serialize_dt(self, dt: datetime, _info):
+    #     return str(dt)

@@ -47,7 +47,7 @@ async def get_category_by_id(
     name="category:create"
 )
 async def create_new_category(
-        category: CategoryCreate = Body(...),
+        category: CategoryCreate = Body(),
         category_repo: CategoryRepository = Depends(get_repository(CategoryRepository)),
         question_repo: QuestionRepository = Depends(get_repository(QuestionRepository))
 ) -> CategoryPublic:
@@ -62,7 +62,7 @@ async def create_new_category(
 )
 async def update_category_by_id(
         category: CategoryInDB = Depends(get_category_by_id_from_path),
-        category_update: CategoryUpdate = Body(...),
+        category_update: CategoryUpdate = Body(),
         category_repo: CategoryRepository = Depends(get_repository(CategoryRepository)),
 ) -> CategoryInDB:
     return await category_repo.update_category_by_id(category=category, category_update=category_update)

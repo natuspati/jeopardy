@@ -19,10 +19,10 @@ class TestQuestionRoutes:
             self,
             app: FastAPI,
             client: TestClient,
-            new_category_with_one_question: CategoryPublic
+            category_with_one_question: CategoryPublic
     ) -> None:
-        category_id = new_category_with_one_question.id
-        question_id = new_category_with_one_question.questions[0]["id"]
+        category_id = category_with_one_question.id
+        question_id = category_with_one_question.questions[0]["id"]
 
         res = await client.get(app.url_path_for("question:get-list-for-category", category_id=category_id))
         assert res.status_code != status.HTTP_404_NOT_FOUND
@@ -51,28 +51,28 @@ class TestGetQuestions:
             self,
             app: FastAPI,
             client: TestClient,
-            new_populated_category: CategoryPublic
+            category_with_three_questions: CategoryPublic
     ) -> None:
         res = await client.get(
-            app.url_path_for("question:get-list-for-category", category_id=new_populated_category.id)
+            app.url_path_for("question:get-list-for-category", category_id=category_with_three_questions.id)
         )
         assert res.status_code == status.HTTP_200_OK
         assert isinstance(res.json(), list)
         assert len(res.json()) > 0
 
-        for fetched_question, created_question in zip(res.json(), new_populated_category.questions):
+        for fetched_question, created_question in zip(res.json(), category_with_three_questions.questions):
             assert fetched_question == created_question
 
     async def test_get_question_by_id_for_category(
             self,
             app: FastAPI,
             client: TestClient,
-            new_category_with_one_question: CategoryPublic
+            category_with_one_question: CategoryPublic
     ) -> None:
-        first_created_question = new_category_with_one_question.questions[0]
+        first_created_question = category_with_one_question.questions[0]
         res = await client.get(app.url_path_for(
             "question:get-by-id",
-            category_id=new_category_with_one_question.id,
+            category_id=category_with_one_question.id,
             question_id=first_created_question["id"]
         ))
         assert res.status_code == status.HTTP_200_OK
@@ -82,12 +82,12 @@ class TestGetQuestions:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
+            empty_category: CategoryPublic,
             random_object_id_str: str
     ) -> None:
         res = await client.get(app.url_path_for(
             "question:get-by-id",
-            category_id=new_empty_category.id,
+            category_id=empty_category.id,
             question_id=random_object_id_str
         ))
         assert res.status_code == status.HTTP_404_NOT_FOUND
@@ -96,13 +96,12 @@ class TestGetQuestions:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
-            new_category_with_one_question: CategoryPublic
+            category_list: List[CategoryPublic]
     ) -> None:
         res = await client.get(app.url_path_for(
             "question:get-by-id",
-            category_id=new_empty_category.id,
-            question_id=new_category_with_one_question.questions[0]["id"]
+            category_id=category_list[0].id,
+            question_id=category_list[1].questions[0]["id"]
         ))
         assert res.status_code == status.HTTP_404_NOT_FOUND
 
@@ -116,18 +115,18 @@ class TestCreateQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
-            new_question_factory: Callable
+            empty_category: CategoryPublic,
+            question_factory: Callable
     ) -> None:
-        new_question_dict = new_question_factory(0).model_dump()
+        new_question_dict = question_factory(0).model_dump()
         res = await client.post(
-            app.url_path_for("question:create", category_id=new_empty_category.id),
+            app.url_path_for("question:create", category_id=empty_category.id),
             json=new_question_dict
         )
         assert res.status_code == status.HTTP_201_CREATED
 
         fetched_question = res.json()
-        assert fetched_question["category_id"] == str(new_empty_category.id)
+        assert fetched_question["category_id"] == str(empty_category.id)
         for key, value in new_question_dict.items():
             assert fetched_question[key] == value
 
@@ -152,12 +151,12 @@ class TestCreateQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
+            empty_category: CategoryPublic,
             invalid_payload,
             status_code
     ) -> None:
         res = await client.post(
-            app.url_path_for("question:create", category_id=new_empty_category.id),
+            app.url_path_for("question:create", category_id=empty_category.id),
             json=invalid_payload
         )
         assert res.status_code == status_code
@@ -180,16 +179,16 @@ class TestUpdateQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_category_with_one_question: CategoryPublic,
+            category_with_one_question: CategoryPublic,
             attrs_to_change: List[str],
             values: List[str | int]
     ) -> None:
-        original_question_dict = new_category_with_one_question.questions[0]
+        original_question_dict = category_with_one_question.questions[0]
         question_update = {attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))}
         res = await client.put(
             app.url_path_for(
                 "question:update-by-id",
-                category_id=new_category_with_one_question.id,
+                category_id=category_with_one_question.id,
                 question_id=original_question_dict["id"]
             ),
             json=question_update
@@ -226,15 +225,15 @@ class TestUpdateQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_category_with_one_question: CategoryPublic,
+            category_with_one_question: CategoryPublic,
             payload: Dict[str, str | int],
             status_code: int
     ) -> None:
-        original_question_dict = new_category_with_one_question.questions[0]
+        original_question_dict = category_with_one_question.questions[0]
         res = await client.put(
             app.url_path_for(
                 "question:update-by-id",
-                category_id=new_category_with_one_question.id,
+                category_id=category_with_one_question.id,
                 question_id=original_question_dict["id"]
             ),
             json=payload
@@ -245,14 +244,13 @@ class TestUpdateQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
-            new_category_with_one_question: CategoryPublic
+            category_list: List[CategoryPublic]
     ) -> None:
         res = await client.put(
             app.url_path_for(
                 "question:update-by-id",
-                category_id=new_empty_category.id,
-                question_id=new_category_with_one_question.questions[0]["id"]
+                category_id=category_list[0].id,
+                question_id=category_list[1].questions[0]["id"]
             ),
             json={"answer": "Wrong category id"}
         )
@@ -267,18 +265,18 @@ class TestDeleteQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_category_with_one_question: CategoryPublic
+            category_with_one_question: CategoryPublic
     ) -> None:
         res = await client.delete(app.url_path_for(
             "question:delete-by-id",
-            category_id=new_category_with_one_question.id,
-            question_id=new_category_with_one_question.questions[0]["id"]
+            category_id=category_with_one_question.id,
+            question_id=category_with_one_question.questions[0]["id"]
         ))
         assert res.status_code == status.HTTP_204_NO_CONTENT
 
         confirm_res = await client.get(app.url_path_for(
             "question:get-list-for-category",
-            category_id=new_category_with_one_question.id
+            category_id=category_with_one_question.id
         ))
         assert confirm_res.status_code == status.HTTP_200_OK
         assert len(confirm_res.json()) == 0
@@ -287,12 +285,12 @@ class TestDeleteQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
+            empty_category: CategoryPublic,
             random_object_id_str: str
     ) -> None:
         res = await client.delete(app.url_path_for(
             "question:delete-by-id",
-            category_id=new_empty_category.id,
+            category_id=empty_category.id,
             question_id=random_object_id_str
         ))
         assert res.status_code == status.HTTP_404_NOT_FOUND
@@ -301,13 +299,12 @@ class TestDeleteQuestion:
             self,
             app: FastAPI,
             client: TestClient,
-            new_empty_category: CategoryPublic,
-            new_category_with_one_question: CategoryPublic,
+            category_list: List[CategoryPublic]
     ) -> None:
         res = await client.delete(app.url_path_for(
             "question:delete-by-id",
-            category_id=new_empty_category.id,
-            question_id=new_category_with_one_question.questions[0]["id"]
+            category_id=category_list[0].id,
+            question_id=category_list[1].questions[0]["id"]
         ))
         assert res.status_code == status.HTTP_404_NOT_FOUND
     
