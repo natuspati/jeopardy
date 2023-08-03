@@ -50,6 +50,7 @@ class CategoryRepository(BaseRepository):
         fetched_category = await self.collection.find_one(
             {"_id": ObjectId(category_id) if isinstance(category_id, str) else category_id}
         )
+        
         if fetched_category:
             return CategoryInDB(**fetched_category)
     
@@ -72,7 +73,7 @@ class CategoryRepository(BaseRepository):
         if not inserted_new_category.acknowledged:
             raise HTTPException(
                 status_code=400,
-                detail=f"Operation on category {category.id} could not be acknowledged"
+                detail=f"Operation on category {inserted_new_category.inserted_id} could not be acknowledged"
             )
         
         fetched_new_category = await self.get_category_by_id(category_id=inserted_new_category.inserted_id)

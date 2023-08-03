@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import Path, Depends, HTTPException
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
+from starlette.status import HTTP_404_NOT_FOUND
 
 from app.api.dependencies.category import get_category_by_id_from_path
 from app.api.dependencies.database import get_repository

@@ -67,7 +67,7 @@ class QuestionRepository(BaseRepository):
         if not inserted_new_question.acknowledged:
             raise HTTPException(
                 status_code=400,
-                detail=f"Operation on question {question.id} could not be acknowledged"
+                detail=f"Operation on question {inserted_new_question.inserted_id} could not be acknowledged"
             )
         
         return await self.get_question_by_id(

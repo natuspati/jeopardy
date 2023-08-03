@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.api.routes.users import router as user_router
-from app.api.routes.lobby import router as lobby_router
+from app.api.routes.lobbies import router as lobby_router
 from app.api.routes.categories import router as category_router
 from app.api.routes.questions import router as question_router
 
