@@ -49,7 +49,7 @@ class AuthService:
             *,
             user: Type[UserBase],
             secret_key: str = str(SECRET_KEY),
-            host_address: str = HOST_ADDRESS,
+            issuer: str = HOST_ADDRESS,
             audience: str = JWT_AUDIENCE,
             expires_in: int = ACCESS_TOKEN_EXPIRE_MINUTES,
     ) -> str | None:
@@ -57,7 +57,7 @@ class AuthService:
             return None
         
         jwt_meta = JWTMeta(
-            iss=host_address,
+            iss=issuer,
             aud=audience,
             iat=datetime.timestamp(datetime.utcnow()),
             exp=datetime.timestamp(datetime.utcnow() + timedelta(minutes=expires_in)),

@@ -53,7 +53,6 @@ class UpdatedAtModelMixin(BaseModel):
     @field_validator("updated_at", mode="before")  # noqa
     @classmethod
     def default_datetime(cls, value: datetime) -> datetime:
-        print(value)
         return value or datetime.now()
     
     # @field_serializer('updated_at')

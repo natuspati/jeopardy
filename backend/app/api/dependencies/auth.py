@@ -33,10 +33,10 @@ def get_current_active_user(current_user: UserInDB = Depends(get_user_from_token
             detail="No authenticated user.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if not current_user.is_active:
+    if current_user.disabled:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not an active user.",
+            detail="User is disabled.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     

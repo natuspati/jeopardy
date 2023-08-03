@@ -13,13 +13,17 @@ from async_asgi_testclient import TestClient
 from pymongo import MongoClient
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.core.config import DATABASE_URL, DATABASE_NAME
+from app.core.config import DATABASE_URL, DATABASE_NAME, JWT_TOKEN_PREFIX, SECRET_KEY
+
 from app.db.repositories.categories import CategoryRepository
 from app.db.repositories.questions import QuestionRepository
 from app.db.repositories.users import UserRepository
+
 from app.models.category import CategoryCreate, CategoryPublic
 from app.models.question import QuestionCreate
 from app.models.user import UserCreate, UserInDB
+
+from app.services import auth_service
 
 
 @pytest.fixture(scope="session")
@@ -55,6 +59,34 @@ async def client(app: FastAPI) -> TestClient:
         yield client
 
 
+@pytest.fixture
+def authorized_client(client: TestClient, test_user: UserInDB) -> TestClient:
+    access_token = auth_service.create_access_token_for_user(
+        user=test_user, secret_key=str(SECRET_KEY)
+    )
+    
+    client.headers = {
+        **client.headers,
+        "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}",
+    }
+    
+    return client
+
+
+async def user_fixture_helper(
+        *,
+        db: AsyncIOMotorDatabase,
+        new_user_instance: UserCreate
+) -> UserInDB:
+    user_repo = UserRepository(db)
+    
+    existing_user = await user_repo.get_user_by_email(email=new_user_instance.email)
+    if existing_user:
+        return existing_user
+    
+    return await user_repo.register_new_user(new_user=new_user_instance)
+
+
 @pytest_asyncio.fixture
 def new_user_instance() -> UserCreate:
     random_string = ''.join(choice(ascii_uppercase) for i in range(12))
@@ -77,10 +109,9 @@ def test_user_instance() -> UserCreate:
 @pytest_asyncio.fixture
 async def test_user(
         db: AsyncIOMotorDatabase,
-        test_user_instance: UserCreate
+        test_user_instance: UserCreate,
 ) -> UserInDB:
-    user_repo = UserRepository(db)
-    return await user_repo.register_new_user(new_user=test_user_instance)
+    return await user_fixture_helper(db=db, new_user_instance=test_user_instance)
 
 
 @pytest_asyncio.fixture

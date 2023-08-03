@@ -59,5 +59,9 @@ async def user_login_with_email_and_password(
 @router.get("/me/", response_model=UserPublic, name="user:get-current-user")
 async def get_currently_authenticated_user(
         current_user: UserInDB = Depends(get_current_active_user)
-) -> UserInDB:
-    return current_user
+) -> UserPublic:
+    cur = UserPublic.model_construct(
+        **current_user.model_dump(exclude={"password", "salt"}),
+        access_token=None
+    )
+    return cur
