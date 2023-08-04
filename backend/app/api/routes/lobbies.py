@@ -5,58 +5,62 @@ from fastapi import APIRouter, Body, Depends
 from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from app.api.dependencies.database import get_repository
+from app.api.dependencies.lobby import get_lobby_by_id_from_path
+from app.api.dependencies.auth import get_current_active_user
+from app.db.repositories.lobbies import LobbyRepository
+from app.models.lobby import LobbyInDB, LobbyCreate, LobbyPublic
+from app.models.user import UserInDB
 
 router = APIRouter()
 
 
 @router.get(
     "/",
+    response_model=List[LobbyInDB],
     response_description="List all lobbies",
     name="lobby:get-all"
 )
 async def list_all_lobbies(
-):
-    return {"text": "List all lobbies"}
+        lobby_repo: LobbyRepository = Depends(get_repository(LobbyRepository))
+) -> List[LobbyInDB]:
+    return await lobby_repo.list_all_lobbies()
 
 
 @router.get(
     "/{lobby_id}/",
+    response_model=LobbyInDB,
     response_description="Get lobby by id",
     name="lobby:get-by-id"
 )
 async def get_lobby_by_id(
-    lobby_id: int
-):
-    return {"text": f"Get lobby by id: {lobby_id}"}
+        lobby: LobbyInDB = Depends(get_lobby_by_id_from_path),
+) -> LobbyInDB:
+    return lobby
 
 
 @router.post(
     "/",
+    response_model=LobbyPublic,
+    status_code=HTTP_201_CREATED,
     response_description="Create a new lobby",
     name="lobby:create"
 )
 async def create_new_lobby(
-):
-    return {"text": "Create new lobby"}
-
-
-@router.put(
-    "/{lobby_id}/",
-    response_description="Update lobby by id",
-    name="lobby:update-by-id"
-)
-async def update_lobby_by_id(
-        lobby_id: int
-):
-    return {"text": f"Update lobby by id: {lobby_id}"}
+        lobby: LobbyCreate = Body(),
+        lobby_repo: LobbyRepository = Depends(get_repository(LobbyRepository)),
+        current_user: UserInDB = Depends(get_current_active_user)
+) -> LobbyPublic:
+    return await lobby_repo.create_lobby(lobby=lobby, current_user=current_user)
 
 
 @router.delete(
     "/{lobby_id}",
+    status_code=HTTP_204_NO_CONTENT,
     response_description="Delete lobby by id",
     name="lobby:delete-by-id"
 )
 async def list_all_lobbies(
-        lobby_id: int
-):
-    return {"text": f"Delete lobby by id: {lobby_id}"}
+        lobby: LobbyInDB = Depends(get_lobby_by_id_from_path),
+        lobby_repo: LobbyRepository = Depends(get_repository(LobbyRepository)),
+) -> None:
+    return await lobby_repo.delete_lobby_by_id(lobby=lobby)

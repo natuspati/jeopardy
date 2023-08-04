@@ -12,8 +12,8 @@ class UserBase(CoreModel):
     """
     username: str
     email: Optional[str]
-    email_verified: Optional[bool] = False
-    disabled: Optional[bool] = False
+    email_verified: bool = False
+    disabled: bool = False
 
 
 class UserCreate(CoreModel):

@@ -61,8 +61,8 @@ async def create_new_category(
     name="category:update-by-id"
 )
 async def update_category_by_id(
-        category: CategoryInDB = Depends(get_category_by_id_from_path),
         category_update: CategoryUpdate = Body(),
+        category: CategoryInDB = Depends(get_category_by_id_from_path),
         category_repo: CategoryRepository = Depends(get_repository(CategoryRepository)),
 ) -> CategoryInDB:
     return await category_repo.update_category_by_id(category=category, category_update=category_update)

@@ -12,6 +12,10 @@ from app.models.category import CategoryPublic, CategoryInDB, CategoryCreate, Ca
 from app.models.core import PyObjectId
 from app.models.question import QuestionCreate
 
+COLLECTION_CONFIG = {
+    "name": "categories"
+}
+
 
 class CategoryRepository(BaseRepository):
     """"
@@ -20,7 +24,7 @@ class CategoryRepository(BaseRepository):
     
     def __init__(self, db: AsyncIOMotorDatabase):
         super().__init__(db)
-        self.collection = self.db.get_collection("categories")
+        self.collection = self.db.get_collection(COLLECTION_CONFIG["name"])
         self.question_repo = QuestionRepository(db)
     
     async def list_all_categories(

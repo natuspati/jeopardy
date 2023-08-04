@@ -2,11 +2,16 @@ from typing import List
 
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.repositories.base import BaseRepository
 from app.models.core import PyObjectId
-from app.models.lobby import LobbyInDB
 from app.models.player import PlayerPublic, PlayerCreate, PlayerUpdate
+
+COLLECTION_CONFIG = {
+    "name": "players",
+    "index_fields": "name"
+}
 
 
 class PlayerRepository(BaseRepository):
@@ -14,9 +19,9 @@ class PlayerRepository(BaseRepository):
     All database actions associated with the Lobby resource
     """
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.collection = self.db.get_collection("players")
+    def __init__(self, db: AsyncIOMotorDatabase):
+        super().__init__(db)
+        self.collection = self.db.get_collection(COLLECTION_CONFIG["name"])
     
     async def list_players_for_lobby(
             self,
@@ -29,15 +34,15 @@ class PlayerRepository(BaseRepository):
         
         return [PlayerPublic(**p) for p in player_records]
     
-    async def get_player_by_id(
+    async def get_player_by_name(
             self,
             *,
             lobby_id: str | PyObjectId,
-            player_id: str | PyObjectId
+            player_name: str
     ) -> PlayerPublic | None:
         fetched_player = await self.collection.find_one(
             {
-                "_id": PyObjectId(player_id) if isinstance(player_id, str) else player_id,
+                "name": player_name,
                 "lobby_id": lobby_id if isinstance(lobby_id, str) else str(lobby_id)
             }
         )
@@ -48,8 +53,7 @@ class PlayerRepository(BaseRepository):
     async def create_player(
             self,
             *,
-            player: PlayerCreate,
-            lobby: LobbyInDB
+            player: PlayerCreate
     ) -> PlayerPublic:
         create_data = player.model_dump()
         encoded_new_player = jsonable_encoder(create_data)
@@ -61,8 +65,8 @@ class PlayerRepository(BaseRepository):
                 detail=f"Operation on player {inserted_new_player.inserted_id} could not be acknowledged"
             )
         
-        return await self.get_player_by_id(
-            lobby_id=lobby.id,
+        return await self.get_player_by_name(
+            lobby_id=player.lobby_id,
             player_id=inserted_new_player.inserted_id,
         )
     
@@ -76,40 +80,40 @@ class PlayerRepository(BaseRepository):
         
         # If no changes are submitted, raise 304 error
         if not update_data:
-            raise HTTPException(status_code=304, detail=f"Player {player.id} is not modified")
+            raise HTTPException(status_code=304, detail=f"Player {player.name} is not modified")
         
         updated_player = player.model_copy(update=update_data)
         encoded_updated_player = jsonable_encoder(updated_player)
         
         inserted_player = await self.collection.update_one(
-            {"_id": updated_player.id}, {"$set": encoded_updated_player}
+            {"name": updated_player.name}, {"$set": encoded_updated_player}
         )
         
         if not inserted_player.acknowledged:
             raise HTTPException(
                 status_code=400,
-                detail=f"Operation on player {player.id} could not be acknowledged"
+                detail=f"Operation on player {updated_player.name} could not be acknowledged"
             )
         
         if (
-                fetched_updated_player := await self.get_player_by_id(
+                fetched_updated_player := await self.get_player_by_name(
                     lobby_id=player.lobby_id,
-                    player_id=player.id
+                    player_name=updated_player.name
                 )
         ) is None:
-            raise HTTPException(status_code=404, detail=f"Player {player.id} not found")
+            raise HTTPException(status_code=404, detail=f"Player {updated_player.name} not found")
         
         return fetched_updated_player
     
-    async def delete_player_by_id(
+    async def delete_player_by_name(
             self,
             *,
             player: PlayerPublic
     ) -> None:
-        delete_result = await self.collection.delete_one({"_id": player.id})
+        delete_result = await self.collection.delete_one({"name": player.name})
         
         if delete_result.deleted_count != 1:
-            raise HTTPException(status_code=404, detail=f"Player {player.id} not found")
+            raise HTTPException(status_code=404, detail=f"Player {player.name} not found")
     
     async def delete_players_for_lobby(
             self,
@@ -117,10 +121,10 @@ class PlayerRepository(BaseRepository):
             lobby_id: str | PyObjectId
     ) -> int:
         deleted_records = await self.collection.delete_many(
-            {'category_id': lobby_id if isinstance(lobby_id, str) else str(lobby_id)}
+            {'lobby_id': lobby_id if isinstance(lobby_id, str) else str(lobby_id)}
         )
         
         if not deleted_records.acknowledged:
-            raise HTTPException(status_code=404, detail=f"Players for lobby {lobby_id} not deleted")
+            raise HTTPException(status_code=404, detail=f"Players for lobby {lobby_id} could not be deleted")
         
         return deleted_records.deleted_count

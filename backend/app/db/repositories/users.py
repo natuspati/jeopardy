@@ -1,18 +1,26 @@
 from typing import Optional
 
-from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import ASCENDING
 from pydantic import EmailStr
 from starlette import status
 
 from app.db.repositories.base import BaseRepository
-from app.models.core import PyObjectId
 
-from app.models.user import UserPublic, UserInDB, UserCreate
+from app.models.core import PyObjectId
+from app.models.user import UserInDB, UserCreate
 
 from app.services import auth_service
+
+COLLECTION_CONFIG = {
+    "name": "users",
+    "index_fields": [
+        ("email", ASCENDING),
+        ("username", ASCENDING)
+    ]
+}
 
 
 class UserRepository(BaseRepository):
@@ -22,7 +30,7 @@ class UserRepository(BaseRepository):
     
     def __init__(self, db: AsyncIOMotorDatabase):
         super().__init__(db)
-        self.collection = self.db.get_collection("users")
+        self.collection = self.db.get_collection(COLLECTION_CONFIG["name"])
         self.auth_service = auth_service
     
     async def get_user_by_id(
@@ -31,7 +39,7 @@ class UserRepository(BaseRepository):
             user_id: str | PyObjectId
     ) -> Optional[UserInDB]:
         user_record = await self.collection.find_one(
-            {"_id": ObjectId(user_id) if isinstance(user_id, str) else user_id}
+            {"_id": PyObjectId(user_id) if isinstance(user_id, str) else user_id}
         )
         if user_record:
             return UserInDB(**user_record)
@@ -98,4 +106,3 @@ class UserRepository(BaseRepository):
             return None
         
         return user
-    

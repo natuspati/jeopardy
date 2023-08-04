@@ -3,11 +3,17 @@ from typing import List
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.repositories.base import BaseRepository
+from app.db.repositories.players import PlayerRepository
 from app.models.core import PyObjectId
 from app.models.lobby import LobbyPublic, LobbyCreate, LobbyInDB
 from app.models.user import UserInDB
+
+COLLECTION_CONFIG = {
+    "name": "lobbies"
+}
 
 
 class LobbyRepository(BaseRepository):
@@ -15,9 +21,10 @@ class LobbyRepository(BaseRepository):
     All database actions associated with the Lobby resource
     """
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.collection = self.db.get_collection("lobbies")
+    def __init__(self, db: AsyncIOMotorDatabase):
+        super().__init__(db)
+        self.collection = self.db.get_collection(COLLECTION_CONFIG["name"])
+        self.player_repo = PlayerRepository(db)
     
     async def list_all_lobbies(self) -> List[LobbyPublic]:
         lobby_records = await self.collection.find().to_list(1000)
@@ -63,4 +70,6 @@ class LobbyRepository(BaseRepository):
         
         if delete_result.deleted_count != 1:
             raise HTTPException(status_code=404, detail=f"Lobby {lobby.id} not found")
-    
+        
+        # Delete players in the lobby
+        await self.player_repo.delete_players_for_lobby(lobby_id=lobby.id)

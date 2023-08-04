@@ -1,30 +1,27 @@
 from typing import Optional
 
-from app.models.core import CoreModel, IDModelMixin
+from app.models.core import CoreModel
 
 
 class PlayerBase(CoreModel):
-    user_id: Optional[str]
     lobby_id: Optional[str]
-    score: int = 0
     name: Optional[str]
+    score: int = 0
 
 
 class PlayerCreate(PlayerBase):
-    user_id = str
-    lobby_id = str
-    name = str
+    lobby_id: str
+    name: str
 
 
 class PlayerUpdate(CoreModel):
     score: int
 
 
-class PlayerInDB(IDModelMixin, PlayerBase):
-    user_id: str
+class PlayerInDB(PlayerBase):
     lobby_id: str
+    name: str
     score: int
-    name = str
 
 
 class PlayerPublic(PlayerInDB):
