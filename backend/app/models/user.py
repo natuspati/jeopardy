@@ -13,6 +13,7 @@ class UserBase(CoreModel):
     username: str
     email: Optional[str]
     email_verified: bool = False
+    admin: bool = False
     disabled: bool = False
 
 

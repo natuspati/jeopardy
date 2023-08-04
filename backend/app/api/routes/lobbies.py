@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Depends
 from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from app.api.dependencies.database import get_repository
-from app.api.dependencies.lobby import get_lobby_by_id_from_path
+from app.api.dependencies.lobby import get_lobby_by_id_from_path, check_lobby_modification_permissions
 from app.api.dependencies.auth import get_current_active_user
 from app.db.repositories.lobbies import LobbyRepository
 from app.models.lobby import LobbyInDB, LobbyCreate, LobbyPublic
@@ -46,18 +46,18 @@ async def get_lobby_by_id(
     name="lobby:create"
 )
 async def create_new_lobby(
-        lobby: LobbyCreate = Body(),
         lobby_repo: LobbyRepository = Depends(get_repository(LobbyRepository)),
         current_user: UserInDB = Depends(get_current_active_user)
 ) -> LobbyPublic:
-    return await lobby_repo.create_lobby(lobby=lobby, current_user=current_user)
+    return await lobby_repo.create_lobby(lobby=LobbyCreate(owner=str(current_user.id)))
 
 
 @router.delete(
     "/{lobby_id}",
     status_code=HTTP_204_NO_CONTENT,
     response_description="Delete lobby by id",
-    name="lobby:delete-by-id"
+    name="lobby:delete-by-id",
+    dependencies=[Depends(check_lobby_modification_permissions)]
 )
 async def list_all_lobbies(
         lobby: LobbyInDB = Depends(get_lobby_by_id_from_path),

@@ -1,9 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Security
 
 from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from app.api.dependencies.auth import get_current_active_user
 from app.api.dependencies.database import get_repository
 from app.api.dependencies.category import get_category_by_id_from_path
 
@@ -44,7 +45,8 @@ async def get_category_by_id(
     response_model=CategoryPublic,
     status_code=HTTP_201_CREATED,
     response_description="Create a new category",
-    name="category:create"
+    name="category:create",
+    dependencies=[Security(get_current_active_user, scopes=["resources"])]
 )
 async def create_new_category(
         category: CategoryCreate = Body(),
@@ -58,7 +60,8 @@ async def create_new_category(
     "/{category_id}/",
     response_model=CategoryInDB,
     response_description="Update category by id",
-    name="category:update-by-id"
+    name="category:update-by-id",
+    dependencies=[Security(get_current_active_user, scopes=["resources"])]
 )
 async def update_category_by_id(
         category_update: CategoryUpdate = Body(),
@@ -72,7 +75,8 @@ async def update_category_by_id(
     "/{category_id}",
     status_code=HTTP_204_NO_CONTENT,
     response_description="Delete category by id",
-    name="category:delete-by-id"
+    name="category:delete-by-id",
+    dependencies=[Security(get_current_active_user, scopes=["resources"])]
 )
 async def delete_category_by_id(
         category: CategoryInDB = Depends(get_category_by_id_from_path),

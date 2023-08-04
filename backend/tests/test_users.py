@@ -307,8 +307,10 @@ class TestAuthToken:
             test_user: UserInDB
     ) -> None:
         token = auth_service.create_access_token_for_user(user=test_user, secret_key=str(SECRET_KEY))
-        username = auth_service.get_username_from_token(token=token, secret_key=str(SECRET_KEY))
-        assert username == test_user.username
+        jwt_credentials = auth_service.get_username_from_token(
+            token=token, secret_key=str(SECRET_KEY)
+        )
+        assert jwt_credentials.username == test_user.username
     
     @pytest.mark.parametrize(
         "secret, wrong_token",

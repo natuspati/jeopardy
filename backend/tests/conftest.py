@@ -73,10 +73,25 @@ def authorized_client(client: TestClient, test_user: UserInDB) -> TestClient:
     return client
 
 
+@pytest.fixture
+def admin_client(client: TestClient, admin_user: UserInDB) -> TestClient:
+    access_token = auth_service.create_access_token_for_user(
+        user=admin_user, secret_key=str(SECRET_KEY)
+    )
+    
+    client.headers = {
+        **client.headers,
+        "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}",
+    }
+    
+    return client
+
+
 async def user_fixture_helper(
         *,
         db: AsyncIOMotorDatabase,
-        new_user_instance: UserCreate
+        new_user_instance: UserCreate,
+        make_admin: bool = False
 ) -> UserInDB:
     user_repo = UserRepository(db)
     
@@ -84,7 +99,11 @@ async def user_fixture_helper(
     if existing_user:
         return existing_user
     
-    return await user_repo.register_new_user(new_user=new_user_instance)
+    registered_user = await user_repo.register_new_user(new_user=new_user_instance)
+    if make_admin:
+        return await user_repo.update_user_admin_status(user=registered_user, admin_status=True)
+    
+    return registered_user
 
 
 @pytest_asyncio.fixture
@@ -101,7 +120,7 @@ def new_user_instance() -> UserCreate:
 def test_user_instance() -> UserCreate:
     return UserCreate(
         email=f"test_user@mail.io",
-        username=f"testuser",
+        username=f"test_user",
         password=f"testpassword"
     )
 
@@ -112,6 +131,19 @@ async def test_user(
         test_user_instance: UserCreate,
 ) -> UserInDB:
     return await user_fixture_helper(db=db, new_user_instance=test_user_instance)
+
+
+@pytest_asyncio.fixture
+async def admin_user(
+        db: AsyncIOMotorDatabase,
+) -> UserInDB:
+    admin_user_create = UserCreate(
+        email=f"admin_user@mail.io",
+        username=f"admin_user",
+        password=f"testpassword"
+    )
+    admin_user_in_db = await user_fixture_helper(db=db, new_user_instance=admin_user_create, make_admin=True)
+    return admin_user_in_db
 
 
 @pytest_asyncio.fixture

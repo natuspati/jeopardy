@@ -15,18 +15,18 @@ class TestCategoryRoutes:
     Check each category route to ensure none return 404s
     """
     
-    async def test_routes_exist(self, app: FastAPI, client: TestClient, empty_category: CategoryPublic) -> None:
+    async def test_routes_exist(self, app: FastAPI, admin_client: TestClient, empty_category: CategoryPublic) -> None:
         category_id = empty_category.id
         
-        res = await client.get(app.url_path_for("category:get-all"))
+        res = await admin_client.get(app.url_path_for("category:get-all"))
         assert res.status_code != status.HTTP_404_NOT_FOUND
-        res = await client.get(app.url_path_for("category:get-by-id", category_id=category_id))
+        res = await admin_client.get(app.url_path_for("category:get-by-id", category_id=category_id))
         assert res.status_code != status.HTTP_404_NOT_FOUND
-        res = await client.post(app.url_path_for("category:create"), json={})
+        res = await admin_client.post(app.url_path_for("category:create"), json={})
         assert res.status_code != status.HTTP_404_NOT_FOUND
-        res = await client.put(app.url_path_for("category:update-by-id", category_id=category_id))
+        res = await admin_client.put(app.url_path_for("category:update-by-id", category_id=category_id))
         assert res.status_code != status.HTTP_404_NOT_FOUND
-        res = await client.delete(app.url_path_for("category:delete-by-id", category_id=category_id))
+        res = await admin_client.delete(app.url_path_for("category:delete-by-id", category_id=category_id))
         assert res.status_code != status.HTTP_404_NOT_FOUND
 
 
@@ -38,10 +38,10 @@ class TestGetCategory:
     async def test_get_all_categories(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             category_list: List[CategoryPublic]
     ) -> None:
-        res = await client.get(
+        res = await admin_client.get(
             app.url_path_for("category:get-all")
         )
         assert res.status_code == status.HTTP_200_OK
@@ -56,10 +56,10 @@ class TestGetCategory:
     async def test_get_category_by_id(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             empty_category: CategoryPublic
     ) -> None:
-        res = await client.get(
+        res = await admin_client.get(
             app.url_path_for("category:get-by-id", category_id=empty_category.id)
         )
         assert res.status_code == status.HTTP_200_OK
@@ -70,10 +70,10 @@ class TestGetCategory:
     async def test_get_category_by_wrong_id_raises_not_found(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             random_object_id_str: str
     ):
-        res = await client.get(
+        res = await admin_client.get(
             app.url_path_for("category:get-by-id", category_id=random_object_id_str)
         )
         assert res.status_code == status.HTTP_404_NOT_FOUND
@@ -87,10 +87,10 @@ class TestCreateCategory:
     async def test_valid_input_crates_empty_category(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             new_empty_category_instance: CategoryCreate
     ) -> None:
-        res = await client.post(
+        res = await admin_client.post(
             app.url_path_for("category:create"), json=new_empty_category_instance.model_dump()
         )
         assert res.status_code == status.HTTP_201_CREATED
@@ -102,10 +102,10 @@ class TestCreateCategory:
     async def test_valid_input_creates_populated_category(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             new_populated_category_instance: CategoryCreate
     ) -> None:
-        res = await client.post(
+        res = await admin_client.post(
             app.url_path_for("category:create"), json=new_populated_category_instance.model_dump()
         )
         assert res.status_code == status.HTTP_201_CREATED
@@ -161,14 +161,36 @@ class TestCreateCategory:
     async def test_invalid_input_create_category_raises_error(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             invalid_payload: Dict[str | int, str | None | List[Dict[str, str | int | None]]] | None,
             status_code: int
     ):
-        res = await client.post(
+        res = await admin_client.post(
             app.url_path_for("category:create"), json=invalid_payload
         )
         assert res.status_code == status_code
+    
+    async def test_unauthenticated_user_creates_category_raises_error(
+            self,
+            app: FastAPI,
+            client: TestClient,
+            new_empty_category_instance: CategoryCreate
+    ) -> None:
+        res = await client.post(
+            app.url_path_for("category:create"), json=new_empty_category_instance.model_dump()
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
+    
+    async def test_authenticated_non_admin_user_creates_category_raises_error(
+            self,
+            app: FastAPI,
+            authorized_client: TestClient,
+            new_empty_category_instance: CategoryCreate
+    ) -> None:
+        res = await authorized_client.post(
+            app.url_path_for("category:create"), json=new_empty_category_instance.model_dump()
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 class TestUpdateCategory:
@@ -185,13 +207,13 @@ class TestUpdateCategory:
     async def test_valid_input_updates_category(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             empty_category: CategoryPublic,
             attrs_to_change: List[str],
             values: List[str],
     ) -> None:
         category_update = {attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))}
-        res = await client.put(
+        res = await admin_client.put(
             app.url_path_for("category:update-by-id", category_id=empty_category.id),
             json=category_update
         )
@@ -223,12 +245,12 @@ class TestUpdateCategory:
     async def test_invalid_input_update_category_raises_error(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             empty_category: CategoryPublic,
             payload: Dict,
             status_code: int
     ) -> None:
-        res = await client.put(
+        res = await admin_client.put(
             app.url_path_for("category:update-by-id", category_id=empty_category.id),
             json=payload
         )
@@ -237,14 +259,38 @@ class TestUpdateCategory:
     async def test_update_category_with_wrong_id_raises_error(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             random_object_id_str: str
     ) -> None:
-        res = await client.put(
+        res = await admin_client.put(
             app.url_path_for("category:update-by-id", category_id=random_object_id_str),
             json={"name": "Should throw an error"}
         )
         assert res.status_code == status.HTTP_404_NOT_FOUND
+    
+    async def test_unauthenticated_user_updates_category_raises_error(
+            self,
+            app: FastAPI,
+            client: TestClient,
+            empty_category: CategoryPublic,
+    ) -> None:
+        res = await client.put(
+            app.url_path_for("category:update-by-id", category_id=empty_category.id),
+            json={"name": "anonymous user can't do update"}
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
+    
+    async def test_authenticated_non_admin_user_updates_category_raises_error(
+            self,
+            app: FastAPI,
+            authorized_client: TestClient,
+            empty_category: CategoryPublic,
+    ) -> None:
+        res = await authorized_client.put(
+            app.url_path_for("category:update-by-id", category_id=empty_category.id),
+            json={"name": "anonymous user can't do update"}
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 class TestDeleteCategory:
@@ -255,10 +301,10 @@ class TestDeleteCategory:
     async def test_delete_valid_category(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             empty_category: CategoryPublic
     ) -> None:
-        res = await client.delete(
+        res = await admin_client.delete(
             app.url_path_for("category:delete-by-id", category_id=empty_category.id)
         )
         assert res.status_code == status.HTTP_204_NO_CONTENT
@@ -266,10 +312,32 @@ class TestDeleteCategory:
     async def test_delete_invalid_category_raises_error(
             self,
             app: FastAPI,
-            client: TestClient,
+            admin_client: TestClient,
             random_object_id_str: str
     ) -> None:
-        res = await client.delete(
+        res = await admin_client.delete(
             app.url_path_for("category:delete-by-id", category_id=random_object_id_str)
         )
         assert res.status_code == status.HTTP_404_NOT_FOUND
+    
+    async def test_unauthenticated_user_deletes_category_raises_error(
+            self,
+            app: FastAPI,
+            client: TestClient,
+            empty_category: CategoryPublic
+    ) -> None:
+        res = await client.delete(
+            app.url_path_for("category:delete-by-id", category_id=empty_category.id)
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
+    
+    async def test_authenticated_non_admin_user_deletes_category_raises_error(
+            self,
+            app: FastAPI,
+            authorized_client: TestClient,
+            empty_category: CategoryPublic
+    ) -> None:
+        res = await authorized_client.delete(
+            app.url_path_for("category:delete-by-id", category_id=empty_category.id)
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED

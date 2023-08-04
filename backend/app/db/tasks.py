@@ -49,7 +49,13 @@ async def check_and_create_collection_indices(db: AsyncIOMotorDatabase) -> None:
         
         if index_fields:
             collection = db.get_collection(collection_config["name"])
-            existing_indices = tuple(await collection.index_information())
+            
+            # Fetch existing indices for the collection
+            fetched_indices = tuple(await collection.index_information())
+            existing_indices = set()
+            for existing_index in fetched_indices:
+                existing_indices.add('_'.join(existing_index.split(sep='_')[:-1]))
+                
             absent_index_fields = []
             
             if isinstance(index_fields, str):
@@ -59,10 +65,11 @@ async def check_and_create_collection_indices(db: AsyncIOMotorDatabase) -> None:
             else:
                 # one or more indexed fields and directions are given
                 
-                for i in range(index_fields):
+                for i in range(len(index_fields)):
                     if index_fields[i][0] not in existing_indices:
                         absent_index_fields.append(index_fields[i])
-                
+            
+            # add index field absent from in the fetched index set
             if absent_index_fields:
                 await collection.create_index(
                     keys=absent_index_fields, unique=unique_constraint, background=background

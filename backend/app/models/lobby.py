@@ -12,7 +12,7 @@ class LobbyBase(CoreModel):
 
 
 class LobbyCreate(LobbyBase):
-    pass
+    owner: str
 
 
 class LobbyInDB(IDModelMixin, UpdatedAtModelMixin, LobbyBase):

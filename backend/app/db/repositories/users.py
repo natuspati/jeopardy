@@ -106,3 +106,31 @@ class UserRepository(BaseRepository):
             return None
         
         return user
+    
+    async def update_user_admin_status(
+            self,
+            *,
+            user: UserInDB,
+            admin_status: bool = False
+    ):
+        updated_user = user.model_copy(update={"admin": admin_status})
+        encoded_updated_user = jsonable_encoder(updated_user)
+        
+        inserted_user = await self.collection.update_one(
+            {"_id": user.id}, {"$set": encoded_updated_user}
+        )
+        
+        if not inserted_user.acknowledged:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Operation on user {user.username} could not be acknowledged"
+            )
+        
+        if (
+                fetched_updated_user := await self.get_user_by_id(
+                    user_id=user.id
+                )
+        ) is None:
+            raise HTTPException(status_code=404, detail=f"User {user.username} not found")
+        
+        return fetched_updated_user

@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+from typing import List
+
 from pydantic import EmailStr
 
 from app.core.config import JWT_AUDIENCE, ACCESS_TOKEN_EXPIRE_MINUTES, HOST_ADDRESS
@@ -17,6 +19,7 @@ class JWTCreds(CoreModel):
 
     sub: EmailStr
     username: str
+    scopes: List[str] = []
 
 
 class JWTPayload(JWTMeta, JWTCreds):

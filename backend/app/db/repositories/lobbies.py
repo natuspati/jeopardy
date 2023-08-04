@@ -44,11 +44,9 @@ class LobbyRepository(BaseRepository):
     async def create_lobby(
             self,
             *,
-            lobby: LobbyCreate,
-            current_user: UserInDB,
+            lobby: LobbyCreate
     ) -> LobbyPublic:
         create_data = lobby.model_dump()
-        create_data["owner"] = current_user.id
         
         encoded_new_lobby = jsonable_encoder(create_data)
         inserted_new_lobby = await self.collection.insert_one(encoded_new_lobby)

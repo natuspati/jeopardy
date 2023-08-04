@@ -62,7 +62,19 @@ class AuthService:
             iat=datetime.timestamp(datetime.utcnow()),
             exp=datetime.timestamp(datetime.utcnow() + timedelta(minutes=expires_in)),
         )
-        jwt_creds = JWTCreds(sub=user.email, username=user.username)
+        
+        scopes = []
+        if not user.disabled:
+            scopes.append("me")
+        if user.admin:
+            scopes.append("resources")
+            
+        jwt_creds = JWTCreds(
+            sub=user.email,
+            username=user.username,
+            scopes=scopes
+        )
+        
         token_payload = JWTPayload(
             **jwt_meta.model_dump(),
             **jwt_creds.model_dump(),
@@ -75,8 +87,15 @@ class AuthService:
     def get_username_from_token(
             *,
             token: str,
-            secret_key: str
-    ) -> str:
+            secret_key: str,
+            authenticate_value: str = "Bearer"
+    ) -> JWTCreds:
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate token credentials.",
+            headers={"WWW-Authenticate": authenticate_value},
+        )
+        
         try:
             decoded_token = jwt.decode(
                 token,
@@ -86,10 +105,17 @@ class AuthService:
                 algorithms=[JWT_ALGORITHM]
             )
             payload = JWTPayload(**decoded_token)
-        except (jwt.PyJWTError, ValidationError):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate token credentials.",
-                headers={"WWW-Authenticate": "Bearer"},
+            
+            sub = getattr(payload, "sub")
+            username = getattr(payload, "username")
+            token_scopes = getattr(payload, "scopes")
+            
+            if not username or not sub:
+                raise credentials_exception
+            
+            token_data = JWTCreds(
+                sub=sub, username=username, scopes=token_scopes
             )
-        return payload.username
+        except (jwt.PyJWTError, ValidationError):
+            raise credentials_exception
+        return token_data

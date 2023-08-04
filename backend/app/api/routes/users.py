@@ -1,12 +1,5 @@
-from fastapi import Depends, APIRouter, HTTPException, Path, Body
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY,
-)
+from fastapi import Depends, APIRouter, HTTPException, Body, Security
+from starlette.status import HTTP_201_CREATED, HTTP_401_UNAUTHORIZED
 
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -58,7 +51,7 @@ async def user_login_with_email_and_password(
 
 @router.get("/me/", response_model=UserPublic, name="user:get-current-user")
 async def get_currently_authenticated_user(
-        current_user: UserInDB = Depends(get_current_active_user)
+        current_user: UserInDB = Security(get_current_active_user, scopes=["me"])
 ) -> UserPublic:
     cur = UserPublic.model_construct(
         **current_user.model_dump(exclude={"password", "salt"}),
