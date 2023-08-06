@@ -2,7 +2,7 @@ import warnings
 import os
 import time
 import binascii
-from typing import List, Callable
+from typing import List, Callable, Dict
 from random import choice
 from string import ascii_uppercase
 
@@ -16,10 +16,14 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.config import DATABASE_URL, DATABASE_NAME, JWT_TOKEN_PREFIX, SECRET_KEY
 
 from app.db.repositories.categories import CategoryRepository
+from app.db.repositories.lobbies import LobbyRepository
+from app.db.repositories.players import PlayerRepository
 from app.db.repositories.questions import QuestionRepository
 from app.db.repositories.users import UserRepository
 
 from app.models.category import CategoryCreate, CategoryPublic
+from app.models.lobby import LobbyCreate, LobbyPublic
+from app.models.player import PlayerCreate, PlayerPublic
 from app.models.question import QuestionCreate
 from app.models.user import UserCreate, UserInDB
 
@@ -59,32 +63,29 @@ async def client(app: FastAPI) -> TestClient:
         yield client
 
 
-@pytest.fixture
-def authorized_client(client: TestClient, test_user: UserInDB) -> TestClient:
-    access_token = auth_service.create_access_token_for_user(
-        user=test_user, secret_key=str(SECRET_KEY)
-    )
+@pytest_asyncio.fixture
+def authenticate_client() -> Callable:
+    def _client(client: TestClient, user: UserInDB) -> TestClient:
+        access_token = auth_service.create_access_token_for_user(
+            user=user, secret_key=str(SECRET_KEY)
+        )
+        client.headers = {
+            **client.headers,
+            "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}",
+        }
+        return client
     
-    client.headers = {
-        **client.headers,
-        "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}",
-    }
-    
-    return client
+    return _client
 
 
-@pytest.fixture
-def admin_client(client: TestClient, admin_user: UserInDB) -> TestClient:
-    access_token = auth_service.create_access_token_for_user(
-        user=admin_user, secret_key=str(SECRET_KEY)
-    )
-    
-    client.headers = {
-        **client.headers,
-        "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}",
-    }
-    
-    return client
+@pytest_asyncio.fixture
+def authorized_client(client: TestClient, test_user: UserInDB, authenticate_client: Callable) -> TestClient:
+    return authenticate_client(client=client, user=test_user)
+
+
+@pytest_asyncio.fixture
+def admin_client(client: TestClient, admin_user: UserInDB, authenticate_client: Callable) -> TestClient:
+    return authenticate_client(client=client, user=admin_user)
 
 
 async def user_fixture_helper(
@@ -117,6 +118,14 @@ def new_user_instance() -> UserCreate:
 
 
 @pytest_asyncio.fixture
+async def random_generated_user(
+        db: AsyncIOMotorDatabase,
+        new_user_instance: UserCreate,
+) -> UserInDB:
+    return await user_fixture_helper(db=db, new_user_instance=new_user_instance)
+
+
+@pytest_asyncio.fixture
 def test_user_instance() -> UserCreate:
     return UserCreate(
         email=f"test_user@mail.io",
@@ -134,6 +143,34 @@ async def test_user(
 
 
 @pytest_asyncio.fixture
+async def user_one(
+        db: AsyncIOMotorDatabase
+) -> UserInDB:
+    return await user_fixture_helper(
+        db=db,
+        new_user_instance=UserCreate(
+            email=f"user_one@mail.io",
+            username=f"user_one",
+            password=f"testpassword"
+        )
+    )
+
+
+@pytest_asyncio.fixture
+async def user_two(
+        db: AsyncIOMotorDatabase
+) -> UserInDB:
+    return await user_fixture_helper(
+        db=db,
+        new_user_instance=UserCreate(
+            email=f"user_two@mail.io",
+            username=f"user_two",
+            password=f"testpassword"
+        )
+    )
+
+
+@pytest_asyncio.fixture
 async def admin_user(
         db: AsyncIOMotorDatabase,
 ) -> UserInDB:
@@ -144,6 +181,85 @@ async def admin_user(
     )
     admin_user_in_db = await user_fixture_helper(db=db, new_user_instance=admin_user_create, make_admin=True)
     return admin_user_in_db
+
+
+async def profile_fixture_helper(
+        *,
+        db: AsyncIOMotorDatabase,
+        new_player_instance: PlayerCreate,
+        lobby_id: str
+) -> PlayerPublic:
+    player_repo = PlayerRepository(db)
+    
+    existing_player = await player_repo.get_player_by_name(
+        lobby_id=lobby_id, player_name=new_player_instance.name
+    )
+    if existing_player:
+        return existing_player
+    
+    return await player_repo.create_player(player=new_player_instance)
+
+
+@pytest_asyncio.fixture
+async def empty_lobby(
+        db: AsyncIOMotorDatabase,
+        test_user: UserInDB
+) -> LobbyPublic:
+    lobby_repo = LobbyRepository(db)
+    return await lobby_repo.create_lobby(
+        lobby=LobbyCreate(owner=test_user.username)
+    )
+
+
+@pytest_asyncio.fixture
+async def inactive_lobby(
+        db: AsyncIOMotorDatabase,
+        test_user: UserInDB
+) -> LobbyPublic:
+    lobby_repo = LobbyRepository(db)
+    created_lobby = await lobby_repo.create_lobby(
+        lobby=LobbyCreate(owner=test_user.username)
+    )
+    return await lobby_repo.deactivate_lobby(lobby=created_lobby)
+
+
+@pytest_asyncio.fixture
+async def populated_lobby(
+        db: AsyncIOMotorDatabase,
+        test_user: UserInDB,
+        user_one: UserInDB,
+        user_two: UserInDB
+) -> Dict[str, LobbyPublic | UserInDB | List[PlayerPublic]]:
+    lobby_repo = LobbyRepository(db)
+    lobby = await lobby_repo.create_lobby(
+        lobby=LobbyCreate(owner=test_user.username)
+    )
+    
+    player_one = await profile_fixture_helper(
+        db=db,
+        new_player_instance=PlayerCreate(lobby_id=str(lobby.id), name=user_one.username),
+        lobby_id=str(lobby.id)
+    )
+    
+    player_two = await profile_fixture_helper(
+        db=db,
+        new_player_instance=PlayerCreate(lobby_id=str(lobby.id), name=user_two.username),
+        lobby_id=str(lobby.id)
+    )
+    
+    return {
+        "lobby": lobby,
+        "owner": test_user,
+        "players": [player_one, player_two]
+    }
+
+
+@pytest_asyncio.fixture
+async def active_lobby_list(
+        empty_lobby: LobbyPublic,
+        populated_lobby: Dict[str, LobbyPublic | UserInDB | List[PlayerPublic]],
+) -> List[LobbyPublic]:
+    return [empty_lobby, populated_lobby["lobby"]]
 
 
 @pytest_asyncio.fixture

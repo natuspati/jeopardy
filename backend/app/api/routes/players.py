@@ -9,7 +9,9 @@ from app.api.dependencies.lobby import get_lobby_by_id_from_path
 from app.api.dependencies.player import (
     list_players_for_lobby_by_id_from_path,
     get_player_by_name_from_path,
-    check_player_modification_permissions
+    check_player_modification_permissions,
+    check_user_in_lobby,
+    check_user_owns_player_in_lobby
 )
 from app.api.dependencies.auth import get_current_active_user
 from app.db.repositories.players import PlayerRepository
@@ -25,7 +27,8 @@ router = APIRouter()
     "/",
     response_model=List[PlayerPublic],
     response_description="List all players in a lobby",
-    name="player:get-players-in-lobby"
+    name="player:get-players-in-lobby",
+    dependencies=[Depends(check_user_in_lobby)]
 )
 async def list_players_in_lobby(
         players: List[PlayerPublic] = Depends(list_players_for_lobby_by_id_from_path),
@@ -37,7 +40,8 @@ async def list_players_in_lobby(
     "/{player_name}/",
     response_model=PlayerPublic,
     response_description="Get player by name",
-    name="player:get-by-name"
+    name="player:get-by-name",
+    dependencies=[Depends(check_user_in_lobby)]
 )
 async def get_player_by_id(
         player: PlayerPublic = Depends(get_player_by_name_from_path),
@@ -50,7 +54,8 @@ async def get_player_by_id(
     response_model=PlayerPublic,
     status_code=HTTP_201_CREATED,
     response_description="Add player to a lobby",
-    name="player:add-to-lobby"
+    name="player:add-to-lobby",
+    dependencies=[Depends(check_user_owns_player_in_lobby)]
 )
 async def add_player_to_lobby(
         lobby: LobbyInDB = Depends(get_lobby_by_id_from_path),

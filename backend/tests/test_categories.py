@@ -38,12 +38,10 @@ class TestGetCategory:
     async def test_get_all_categories(
             self,
             app: FastAPI,
-            admin_client: TestClient,
+            client: TestClient,
             category_list: List[CategoryPublic]
     ) -> None:
-        res = await admin_client.get(
-            app.url_path_for("category:get-all")
-        )
+        res = await client.get(app.url_path_for("category:get-all"))
         assert res.status_code == status.HTTP_200_OK
         assert isinstance(res.json(), list)
         assert len(res.json()) > 0
@@ -56,10 +54,10 @@ class TestGetCategory:
     async def test_get_category_by_id(
             self,
             app: FastAPI,
-            admin_client: TestClient,
+            client: TestClient,
             empty_category: CategoryPublic
     ) -> None:
-        res = await admin_client.get(
+        res = await client.get(
             app.url_path_for("category:get-by-id", category_id=empty_category.id)
         )
         assert res.status_code == status.HTTP_200_OK
@@ -70,10 +68,10 @@ class TestGetCategory:
     async def test_get_category_by_wrong_id_raises_not_found(
             self,
             app: FastAPI,
-            admin_client: TestClient,
+            client: TestClient,
             random_object_id_str: str
     ):
-        res = await admin_client.get(
+        res = await client.get(
             app.url_path_for("category:get-by-id", category_id=random_object_id_str)
         )
         assert res.status_code == status.HTTP_404_NOT_FOUND
@@ -84,7 +82,7 @@ class TestCreateCategory:
     Check category creation with and without questions, with and without valid input
     """
     
-    async def test_valid_input_crates_empty_category(
+    async def test_valid_input_creates_empty_category(
             self,
             app: FastAPI,
             admin_client: TestClient,

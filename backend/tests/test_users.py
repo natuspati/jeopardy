@@ -27,7 +27,8 @@ from app.core.config import (
 from app.db.repositories.users import UserRepository
 from app.models.user import UserCreate, UserInDB
 
-from app.services import auth_service
+from app.services import auth_service, string_to_datetime
+
 
 pytestmark = pytest.mark.asyncio
 
@@ -75,7 +76,7 @@ class TestUserRegistration:
         # check that the user returned in the response is equal to the user in the database
         created_user = res.json()
         # convert updated at string to datetime and remove access token
-        created_user["updated_at"] = datetime.strptime(created_user["updated_at"], '%Y-%m-%dT%H:%M:%S.%f')
+        created_user["updated_at"] = string_to_datetime(created_user["updated_at"])
         created_user.pop("access_token")
         assert created_user == user_in_db.model_dump(exclude={"password", "salt"})
     
@@ -106,14 +107,10 @@ class TestUserRegistration:
             self,
             app: FastAPI,
             client: TestClient,
-            db: AsyncIOMotorDatabase,
             new_user_instance: UserCreate,
             test_user_instance: UserCreate,
+            test_user: UserInDB
     ) -> None:
-        # register test user
-        user_repo = UserRepository(db)
-        test_user_in_db = await user_repo.register_new_user(new_user=test_user_instance)
-        
         # repeat email
         new_user = new_user_instance.model_dump()
         new_user["email"] = getattr(test_user_instance, "email")

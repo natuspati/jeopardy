@@ -17,13 +17,13 @@ router = APIRouter()
 @router.get(
     "/",
     response_model=List[LobbyInDB],
-    response_description="List all lobbies",
-    name="lobby:get-all"
+    response_description="List active lobbies",
+    name="lobby:get-active"
 )
-async def list_all_lobbies(
+async def list_active_lobbies(
         lobby_repo: LobbyRepository = Depends(get_repository(LobbyRepository))
 ) -> List[LobbyInDB]:
-    return await lobby_repo.list_all_lobbies()
+    return await lobby_repo.list_active_lobbies()
 
 
 @router.get(
@@ -49,7 +49,7 @@ async def create_new_lobby(
         lobby_repo: LobbyRepository = Depends(get_repository(LobbyRepository)),
         current_user: UserInDB = Depends(get_current_active_user)
 ) -> LobbyPublic:
-    return await lobby_repo.create_lobby(lobby=LobbyCreate(owner=str(current_user.id)))
+    return await lobby_repo.create_lobby(lobby=LobbyCreate(owner=current_user.username))
 
 
 @router.delete(

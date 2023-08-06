@@ -10,7 +10,8 @@ from app.models.player import PlayerPublic, PlayerCreate, PlayerUpdate
 
 COLLECTION_CONFIG = {
     "name": "players",
-    "index_fields": "name"
+    "index_fields": "name",
+    "unique": False
 }
 
 
@@ -23,11 +24,20 @@ class PlayerRepository(BaseRepository):
         super().__init__(db)
         self.collection = self.db.get_collection(COLLECTION_CONFIG["name"])
     
-    async def list_players_for_lobby(
+    async def list_players_in_lobby(
             self,
             *,
-            lobby_id: str | PyObjectId
-    ) -> List[PlayerPublic]:
+            lobby_id: str | PyObjectId,
+            only_names: bool = False
+    ) -> List[PlayerPublic] | List[str]:
+        # select only player names of only_names enabled
+        if only_names:
+            player_records = await self.collection.find(
+                {'lobby_id': lobby_id if isinstance(lobby_id, str) else str(lobby_id)},
+                {"name": 1, "_id": 0}
+            ).to_list(1000)
+            return [pr["name"] for pr in player_records]
+        
         player_records = await self.collection.find(
             {'lobby_id': lobby_id if isinstance(lobby_id, str) else str(lobby_id)}
         ).to_list(1000)
@@ -67,7 +77,7 @@ class PlayerRepository(BaseRepository):
         
         return await self.get_player_by_name(
             lobby_id=player.lobby_id,
-            player_id=inserted_new_player.inserted_id,
+            player_name=player.name,
         )
     
     async def update_player_score(

@@ -50,10 +50,10 @@ class TestGetQuestions:
     async def test_list_questions_for_category(
             self,
             app: FastAPI,
-            admin_client: TestClient,
+            client: TestClient,
             category_with_three_questions: CategoryPublic
     ) -> None:
-        res = await admin_client.get(
+        res = await client.get(
             app.url_path_for("question:get-list-for-category", category_id=category_with_three_questions.id)
         )
         assert res.status_code == status.HTTP_200_OK
@@ -66,11 +66,11 @@ class TestGetQuestions:
     async def test_get_question_by_id_for_category(
             self,
             app: FastAPI,
-            admin_client: TestClient,
+            client: TestClient,
             category_with_one_question: CategoryPublic
     ) -> None:
         first_created_question = category_with_one_question.questions[0]
-        res = await admin_client.get(app.url_path_for(
+        res = await client.get(app.url_path_for(
             "question:get-by-id",
             category_id=category_with_one_question.id,
             question_id=first_created_question["id"]
@@ -81,11 +81,11 @@ class TestGetQuestions:
     async def test_get_question_by_wrong_id_raises_error(
             self,
             app: FastAPI,
-            admin_client: TestClient,
+            client: TestClient,
             empty_category: CategoryPublic,
             random_object_id_str: str
     ) -> None:
-        res = await admin_client.get(app.url_path_for(
+        res = await client.get(app.url_path_for(
             "question:get-by-id",
             category_id=empty_category.id,
             question_id=random_object_id_str
@@ -95,10 +95,10 @@ class TestGetQuestions:
     async def test_get_question_from_wrong_category_raises_error(
             self,
             app: FastAPI,
-            admin_client: TestClient,
+            client: TestClient,
             category_list: List[CategoryPublic]
     ) -> None:
-        res = await admin_client.get(app.url_path_for(
+        res = await client.get(app.url_path_for(
             "question:get-by-id",
             category_id=category_list[0].id,
             question_id=category_list[1].questions[0]["id"]

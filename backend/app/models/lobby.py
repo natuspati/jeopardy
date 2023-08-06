@@ -8,7 +8,7 @@ class LobbyBase(CoreModel):
     """
     All common characteristics of our Lobby resource
     """
-    finished: Optional[bool] = False
+    active: Optional[bool] = True
 
 
 class LobbyCreate(LobbyBase):
