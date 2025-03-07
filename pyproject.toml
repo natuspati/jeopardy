@@ -1,0 +1,18 @@
+[project]
+name = "jeopardy"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.21.0",
+    "alembic>=1.15.1",
+    "fastapi[standard]>=0.115.11",
+    "pydantic-settings>=2.8.1",
+    "sqlalchemy[asyncio]>=2.0.38",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "pytest-asyncio>=0.25.3",
+]
