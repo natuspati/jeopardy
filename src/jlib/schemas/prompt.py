@@ -2,9 +2,9 @@ from typing import Annotated
 
 from pydantic import BeforeValidator
 
-from jlib.enums.prompt import QuestionTypeEnum, AnswerTypeEnum
+from jlib.enums.prompt import AnswerTypeEnum, QuestionTypeEnum
 from jlib.schemas.base import BaseSchema
-from jlib.types.prompt import QuestionShowType, AnswerShowType
+from jlib.types.prompt import AnswerShowType, QuestionShowType
 
 
 def _convert_question_type_to_str(question_type: int | str | QuestionTypeEnum) -> str:
@@ -20,7 +20,9 @@ def _convert_question_type_to_str(question_type: int | str | QuestionTypeEnum) -
             raise ValueError(f"Invalid question type: {question_type}")
 
 
-def _convert_str_to_question_type(question_type: str | int | QuestionTypeEnum) -> QuestionTypeEnum:
+def _convert_str_to_question_type(
+    question_type: str | int | QuestionTypeEnum,
+) -> QuestionTypeEnum:
     if isinstance(question_type, QuestionTypeEnum):
         return question_type
 
@@ -46,7 +48,9 @@ def _convert_answer_type_to_str(answer_type: int | str | AnswerTypeEnum) -> str:
             raise ValueError(f"Invalid question type: {answer_type}")
 
 
-def _convert_str_to_answer_type(answer_type: str | int | AnswerTypeEnum) -> AnswerTypeEnum:
+def _convert_str_to_answer_type(
+    answer_type: str | int | AnswerTypeEnum,
+) -> AnswerTypeEnum:
     if isinstance(answer_type, AnswerTypeEnum):
         return answer_type
 
@@ -97,9 +101,7 @@ class PromptShowSchema(BaseSchema):
         QuestionShowType, BeforeValidator(_convert_question_type_to_str)
     ]
     answer: str
-    answer_type: Annotated[
-        AnswerShowType, BeforeValidator(_convert_answer_type_to_str)
-    ]
+    answer_type: Annotated[AnswerShowType, BeforeValidator(_convert_answer_type_to_str)]
     default_priority: int
     category_id: int
 

@@ -1,8 +1,8 @@
 from typing import Literal
 
 import pytz
+import sqlalchemy
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import URL
 
 from jlib.enums import AppEnvironmentEnum
 from jlib.types.database import ISOLATION_LEVEL_TYPE
@@ -64,8 +64,8 @@ class Settings(BaseSettings):
     pytz_timezone: str = "Etc/GMT-5"
 
     @property
-    def db_url(self) -> URL:
-        return URL.create(
+    def db_url(self) -> sqlalchemy.URL:
+        return sqlalchemy.URL.create(
             drivername=self.db_driver,
             host=self.db_host,
             port=self.db_port,

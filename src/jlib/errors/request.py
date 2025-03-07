@@ -1,5 +1,6 @@
-from jlib.errors.base import BaseServiceError
 from fastapi import status
+
+from jlib.errors.base import BaseServiceError
 
 
 class BadRequestError(BaseServiceError):

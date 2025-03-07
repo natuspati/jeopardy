@@ -1,12 +1,12 @@
-from typing import Annotated, Self
+from typing import Annotated
 
-from pydantic import Field, AfterValidator, model_validator
+from pydantic import AfterValidator, Field
 
 from jlib.schemas.base import BaseSchema, OneFieldSetSchemaMixin
 from jlib.schemas.prompt import (
+    PromptPriorityUpdateSchema,
     PromptSchema,
     PromptShowSchema,
-    PromptPriorityUpdateSchema,
 )
 
 

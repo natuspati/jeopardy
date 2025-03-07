@@ -8,9 +8,9 @@ from jlib.schemas.category import (
     BasicCategoryShowSchema,
     CategoryCreateSchema,
     CategoryCreateShowSchema,
+    CategoryFullUpdateSchema,
     CategoryShowSchema,
     CategoryUpdateShowSchema,
-    CategoryFullUpdateSchema,
 )
 from jlib.schemas.pagination import PaginationSchema
 from jlib.schemas.user import UserSchema

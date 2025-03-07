@@ -19,7 +19,7 @@ class BaseCategoryDAL(ABC):
     @abstractmethod
     async def create(self, category: CategoryCreateSchema):
         pass
-    
+
     @abstractmethod
     async def update(self, category_id: int, category: CategoryPartialUpdateSchema):
         pass

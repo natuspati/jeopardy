@@ -3,7 +3,8 @@ from abc import ABC, abstractmethod
 from jlib.schemas.category import (
     BasicCategorySchema,
     CategoryCreateSchema,
-    CategorySchema, CategoryFullUpdateSchema,
+    CategoryFullUpdateSchema,
+    CategorySchema,
 )
 from jlib.schemas.prompt import PromptCreateSchema, PromptSchema
 
@@ -29,7 +30,9 @@ class BaseQuestionService(ABC):
         pass
 
     @abstractmethod
-    async def update_category(self, category_update: CategoryFullUpdateSchema) -> CategorySchema:
+    async def update_category(
+        self, category_update: CategoryFullUpdateSchema
+    ) -> CategorySchema:
         pass
 
     @abstractmethod

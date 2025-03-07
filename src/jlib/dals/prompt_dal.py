@@ -7,4 +7,3 @@ class BasePromptDAL(ABC):
     @abstractmethod
     async def create(self, prompt: PromptCreateSchema):
         pass
-    

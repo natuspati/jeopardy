@@ -12,9 +12,9 @@ from jlib.errors.resource import ResourceExistsError, ResourceNotFoundError
 from jlib.schemas.category import (
     BasicCategorySchema,
     CategoryCreateSchema,
-    CategorySchema,
     CategoryFullUpdateSchema,
     CategoryPartialUpdateSchema,
+    CategorySchema,
 )
 from jlib.schemas.pagination import PaginationSchema
 from jlib.schemas.prompt import PromptCreateSchema, PromptSchema
@@ -75,7 +75,7 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
         if category_update.prompts and len(category_update.prompts) != len(
             category.prompts
         ):
-            raise BadRequestError(f"Provided number of prompts does not match")
+            raise BadRequestError("Provided number of prompts does not match")
         if category_update.name:
             await self._category_dal.update(
                 category_id=category_update.id,

@@ -12,7 +12,7 @@ class UserDAL(BaseUserDAL, RelationalDAL):
     ) -> UserModel | None:
         stmt = select(UserModel).where(UserModel.id == user_id)
         if allow_deleted:
-            stmt = stmt.where(UserModel.deleted == False)
+            stmt = stmt.where(UserModel.deleted.is_(False))
         return await self.scalar(stmt)
 
     async def select_by_username(self, username: str) -> UserModel | None:

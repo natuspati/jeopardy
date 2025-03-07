@@ -6,7 +6,7 @@ from typing import Iterable
 from alembic import context, util
 from alembic.operations import MigrationScript
 from alembic.runtime.migration import MigrationContext
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
