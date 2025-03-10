@@ -2,14 +2,8 @@ import typer
 
 from scripts.migrations import apply_migrations
 from scripts.mock_data import apply_mock_data
-from scripts.path_utils import ensure_working_directory
 
 app = typer.Typer()
-
-
-@app.command()
-def hello(name: str):
-    print(f"Hello {name}")
 
 
 @app.command()
@@ -23,5 +17,4 @@ def migrate():
 
 
 if __name__ == "__main__":
-    ensure_working_directory()
     app()

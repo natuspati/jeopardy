@@ -45,8 +45,7 @@ See [`src/manage.py`](src/manage.py)
 ### Usage
 Run the CLI with the following command:
 ```sh
-cd src
-python manage.py --help
+python src/manage.py --help
 ```
 ### Commands
 - `migrate` - apply alembic migrations

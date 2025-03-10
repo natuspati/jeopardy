@@ -21,13 +21,16 @@ dependencies = [
 dev = [
     "black>=25.1.0",
     "httpx>=0.28.1",
+    "pre-commit>=4.1.0",
     "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
     "pytest-env>=1.1.5",
     "ruff>=0.9.9",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = "src"
+addopts = "--cov=src --log-cli-level=INFO"
 asyncio_default_fixture_loop_scope = "session"
 
 [tool.pytest_env]
@@ -40,6 +43,9 @@ JEOPARDY_DB_PASS = "null"
 JEOPARDY_DB_NAME = ":memory:"
 JEOPARDY_DB_ISOLATION_LEVEL = "SERIALIZABLE"
 JEOPARDY_DB_ECHO = "false"
+
+[tool.coverage.report]
+fail_under = 60  # temporary
 
 [tool.ruff.format]
 quote-style = "double"
