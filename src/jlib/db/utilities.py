@@ -1,7 +1,7 @@
-from jlib.db import DBSessionManager
+from jlib.db import DBManager
 from settings import settings
 
-_default_db_manager = DBSessionManager(
+_default_db_manager = DBManager(
     db_url=settings.db_url,
     db_echo=settings.db_echo,
     db_echo_pool=settings.db_echo_pool,
@@ -10,5 +10,5 @@ _default_db_manager = DBSessionManager(
 )
 
 
-def get_db_manager() -> DBSessionManager:
+def get_db_manager() -> DBManager:
     return _default_db_manager

@@ -14,7 +14,7 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from jlib.db import DBSessionManager
+from jlib.db import DBManager
 from jlib.db.utilities import get_db_manager
 from jlib.errors.database import DatabaseDetailError
 
@@ -33,7 +33,7 @@ COMMON_DB_ERRORS = (
 class RelationalDAL:
     def __init__(
         self,
-        db_manager: Annotated[DBSessionManager, Depends(get_db_manager)],
+        db_manager: Annotated[DBManager, Depends(get_db_manager)],
     ):
         self._db_manager = db_manager
 

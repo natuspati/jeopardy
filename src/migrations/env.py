@@ -6,9 +6,8 @@ from typing import Iterable
 from alembic import context, util
 from alembic.operations import MigrationScript
 from alembic.runtime.migration import MigrationContext
-from sqlalchemy import Engine
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from models.base import meta
 from settings import settings
@@ -19,30 +18,6 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = meta
-
-
-def _run_migrations(connection: Connection) -> None:
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        process_revision_directives=process_revision_directives,
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-async def _run_async_migrations(connectable: AsyncEngine) -> None:
-    async with connectable.connect() as connection:
-        await connection.run_sync(_run_migrations)
-
-    await connectable.dispose()
-
-
-def _run_sync_migrations(connectable: Engine) -> None:
-    with connectable.connect() as connection:
-        _run_migrations(connection)
-    connectable.dispose()
 
 
 def process_revision_directives(
@@ -73,6 +48,33 @@ def process_revision_directives(
     util.msg(f"Generated revision ID: {revision_id}")
 
 
+# def _run_migrations(connection: Connection) -> None:
+#     context.configure(
+#         connection=connection,
+#         target_metadata=target_metadata,
+#         process_revision_directives=process_revision_directives,
+#     )
+#
+#     with context.begin_transaction():
+#         context.run_migrations()
+#
+#
+# async def _run_async_migrations(connectable: AsyncEngine) -> None:
+#     async with connectable.connect() as connection:
+#         await connection.run_sync(_run_migrations)
+#         res = await connection.scalars(text("SELECT name FROM sqlite_master WHERE type='table';"))
+#         tables = res.all()
+#         print(f"DB tables: {tables}")
+#
+#     await connectable.dispose()
+#
+#
+# def _run_sync_migrations(connectable: Engine) -> None:
+#     with connectable.connect() as connection:
+#         _run_migrations(connection)
+#     connectable.dispose()
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -97,13 +99,25 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
+def do_run_migrations(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    connectable = create_async_engine(settings.db_url)
-    asyncio.run(_run_async_migrations(connectable))
+    connectable = create_async_engine(
+        settings.db_url,
+        poolclass=pool.NullPool,
+        future=True,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())

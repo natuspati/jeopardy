@@ -16,7 +16,7 @@ from jlib.types.database import ISOLATION_LEVEL_TYPE
 _logger = logging.getLogger(__name__)
 
 
-class DBSessionManager:
+class DBManager:
     def __init__(
         self,
         db_url: str | URL,

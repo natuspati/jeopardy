@@ -1,3 +1,3 @@
 """Database manager."""
 
-from jlib.db.manager import DBSessionManager
+from jlib.db.manager import DBManager
