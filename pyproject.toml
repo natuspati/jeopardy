@@ -46,7 +46,10 @@ JEOPARDY_DB_ISOLATION_LEVEL = "SERIALIZABLE"
 JEOPARDY_DB_ECHO = "false"
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 85
+
+[tool.coverage.run]
+omit = ["src/migrations/*", "src/manage.py", "src/scripts/*", "src/main.py"]
 
 [tool.ruff.format]
 quote-style = "double"
