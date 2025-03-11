@@ -2,11 +2,10 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from dals.user_dal import UserDAL
+from dals import UserDAL
 from jlib.errors.resource import ResourceExistsError
 from jlib.schemas.user import UserCreateSchema, UserSchema
-from jlib.services.base_service import SchemaValidationServiceMixin
-from jlib.services.user_service import BaseUserService
+from jlib.services import BaseUserService, SchemaValidationServiceMixin
 from jlib.utils.auth import hash_password
 
 

@@ -3,16 +3,18 @@ from typing import Annotated
 from fastapi import Depends
 from jwt import InvalidTokenError
 
-from jlib.auth import oauth2_scheme
+from auth.scheme import oauth2_scheme
 from jlib.errors.auth import ImproperTokenError, UnauthorizedError
 from jlib.schemas.user import TokenSchema, UserSchema
-from jlib.services.user_service import BaseUserService
+from jlib.services import BaseUserService
 from jlib.utils.auth import create_access_token, decode_token, verify_password
-from services.user_service import UserService
+from services import UserService
 
 
 async def authenticate(
-    user_service: BaseUserService, username: str, password: str
+    user_service: BaseUserService,
+    username: str,
+    password: str,
 ) -> TokenSchema:
     user = await user_service.get_by_username(username)
     if not user:

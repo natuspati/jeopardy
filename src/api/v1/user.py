@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+import auth
 from jlib.schemas.user import TokenSchema, UserCreateSchema, UserSchema, UserShowSchema
-from jlib.services.user_service import BaseUserService
+from jlib.services import BaseUserService
 from jlib.utils.response import generate_responses
-from services import auth_service
-from services.user_service import UserService
+from services import UserService
 
 router = APIRouter(prefix="/user")
 
@@ -33,7 +33,7 @@ async def register_user(
     response_model=UserShowSchema,
 )
 async def get_user_details(
-    current_user: Annotated[UserSchema, Depends(auth_service.get_current_user)],
+    current_user: Annotated[UserSchema, Depends(auth.auth_utils.get_current_user)],
 ):
     return current_user
 
@@ -43,7 +43,7 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_service: Annotated[BaseUserService, Depends(UserService)],
 ) -> TokenSchema:
-    return await auth_service.authenticate(
+    return await auth.authenticate(
         user_service,
         form_data.username,
         form_data.password,

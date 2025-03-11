@@ -2,8 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from dals.category_dal import CategoryDAL
-from dals.prompt_dal import PromptDAL
+from dals import CategoryDAL, PromptDAL
 from jlib.dals.category_dal import BaseCategoryDAL
 from jlib.dals.prompt_dal import BasePromptDAL
 from jlib.errors.auth import ForbiddenError
@@ -15,11 +14,11 @@ from jlib.schemas.category import (
     CategoryFullUpdateSchema,
     CategoryPartialUpdateSchema,
     CategorySchema,
+    PaginatedBasicCategorySchema,
 )
 from jlib.schemas.pagination import PaginationSchema
-from jlib.schemas.prompt import PromptCreateSchema, PromptSchema
-from jlib.services.base_service import SchemaValidationServiceMixin
-from jlib.services.question_service import BaseQuestionService
+from jlib.schemas.prompt import PromptCreateSchema, PromptSchema, PromptUpdateSchema
+from jlib.services import BaseQuestionService, SchemaValidationServiceMixin
 from settings import settings
 
 
@@ -45,12 +44,16 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
     async def get_categories(
         self,
         pagination: PaginationSchema,
-    ) -> list[BasicCategorySchema]:
+    ) -> PaginatedBasicCategorySchema:
         self._check_pagination(pagination)
         categories = await self._category_dal.select(
-            offset=pagination.offset, limit=pagination.limit
+            offset=pagination.offset,
+            limit=pagination.limit,
         )
-        return self._validate(categories, BasicCategorySchema)
+        return PaginatedBasicCategorySchema.paginate(
+            items=self._validate(categories, BasicCategorySchema),
+            pagination=pagination,
+        )
 
     async def create_category(
         self,
@@ -65,13 +68,16 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
         return self._validate(created_category, BasicCategorySchema)
 
     async def update_category(
-        self, category_update: CategoryFullUpdateSchema
+        self,
+        category_update: CategoryFullUpdateSchema,
     ) -> CategorySchema:
         category = await self.get_category_by_id(category_update.id)
         if not category:
             raise ResourceNotFoundError(
                 f"Category with id {category_update.id} does not exist"
             )
+        if category.owner_id != category_update.owner_id:
+            raise ForbiddenError(f"User does not own the category {category_update.id}")
         if category_update.prompts and len(category_update.prompts) != len(
             category.prompts
         ):
@@ -79,11 +85,13 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
         if category_update.name:
             await self._category_dal.update(
                 category_id=category_update.id,
-                category=CategoryPartialUpdateSchema(name=category_update.name),
+                category=CategoryPartialUpdateSchema(
+                    id=category_update.id, name=category_update.name
+                ),
             )
         if category_update.prompts:
-            pass
-        return category
+            await self._prompt_dal.update_priorities(category_update.prompts)
+        return await self.get_category_by_id(category_update.id)
 
     async def delete_category(self, category_id: int, user_id: int) -> None:
         existing_category = await self.get_category_by_id(category_id)
@@ -92,11 +100,19 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
                 raise ForbiddenError(f"User does not own the category {category_id}")
             await self._category_dal.delete(category_id)
 
-    async def create_prompt(self, prompt_create: PromptCreateSchema) -> PromptSchema:
+    async def create_prompt(
+        self,
+        user_id: int,
+        prompt_create: PromptCreateSchema,
+    ) -> PromptSchema:
         category = await self.get_category_by_id(prompt_create.category_id)
         if not category:
             raise ResourceNotFoundError(
                 f"Category with id {prompt_create.category_id} does not exist"
+            )
+        if category.owner_id != user_id:
+            raise ForbiddenError(
+                f"User does not own the category {prompt_create.category_id}"
             )
 
         existing_priorities = {prompt.default_priority for prompt in category.prompts}
@@ -106,6 +122,28 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
             )
         created_prompt = await self._prompt_dal.create(prompt_create)
         return self._validate(created_prompt, PromptSchema)
+
+    async def update_prompt(
+        self,
+        user_id: int,
+        prompt_update: PromptUpdateSchema,
+    ) -> PromptSchema:
+        prompt = await self._prompt_dal.select_by_id(prompt_update.id)
+        if not prompt or prompt.category_id != prompt_update.category_id:
+            raise ResourceNotFoundError(
+                f"Prompt with id {prompt_update.id} does not exist"
+            )
+        if prompt.category_id != prompt_update.category_id:
+            raise ResourceNotFoundError(
+                f"Prompt with id {prompt_update.id} does not exist"
+            )
+        if prompt.category.owner_id != user_id:
+            raise ForbiddenError(
+                f"User does not own the category {prompt_update.category_id}"
+            )
+        await self._prompt_dal.update(prompt_update)
+        updated_prompt = await self._prompt_dal.select_by_id(prompt_update.id)
+        return self._validate(updated_prompt, PromptSchema)
 
     @classmethod
     def _check_pagination(cls, pagination: PaginationSchema) -> None:

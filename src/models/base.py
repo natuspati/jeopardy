@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -29,6 +30,11 @@ class Base(DeclarativeBase):
 
 class BaseDBModel(Base):
     __abstract__ = True
+
+    def to_dict(self) -> dict[str, Any]:
+        model_as_dict = self.__dict__
+        model_as_dict.pop("_sa_instance_state")
+        return model_as_dict
 
 
 class BaseDBModelID(BaseDBModel, IDDBMixin):

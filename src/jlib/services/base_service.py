@@ -1,21 +1,20 @@
-from typing import Any, Iterable, TypeVar
+from typing import Any, Sequence
 
 from pydantic import ValidationError
 
 from jlib.errors.schema import SchemaValidationError
 from jlib.schemas.base import BaseSchema
-
-T = TypeVar("T", bound=BaseSchema)
+from jlib.types.schemas import T
 
 
 class SchemaValidationServiceMixin:
     @classmethod
     def _validate(
         cls,
-        data: Iterable | Any,
+        data: Sequence | Any,
         schema: type[T],
     ) -> list[T] | T:
-        if isinstance(data, Iterable):
+        if isinstance(data, Sequence):
             return cls._validate_schemas(
                 data=data,
                 schema=schema,
@@ -40,7 +39,7 @@ class SchemaValidationServiceMixin:
     @classmethod
     def _validate_schemas(
         cls,
-        data: Iterable,
+        data: Sequence,
         schema: type[BaseSchema],
     ) -> list[BaseSchema]:
         try:

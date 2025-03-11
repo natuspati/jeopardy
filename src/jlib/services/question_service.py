@@ -5,8 +5,9 @@ from jlib.schemas.category import (
     CategoryCreateSchema,
     CategoryFullUpdateSchema,
     CategorySchema,
+    PaginatedBasicCategorySchema,
 )
-from jlib.schemas.prompt import PromptCreateSchema, PromptSchema
+from jlib.schemas.prompt import PromptCreateSchema, PromptSchema, PromptUpdateSchema
 
 
 class BaseQuestionService(ABC):
@@ -19,7 +20,7 @@ class BaseQuestionService(ABC):
         pass
 
     @abstractmethod
-    async def get_categories(self, **kwargs) -> list[BasicCategorySchema]:
+    async def get_categories(self, **kwargs) -> PaginatedBasicCategorySchema:
         pass
 
     @abstractmethod
@@ -31,7 +32,8 @@ class BaseQuestionService(ABC):
 
     @abstractmethod
     async def update_category(
-        self, category_update: CategoryFullUpdateSchema
+        self,
+        category_update: CategoryFullUpdateSchema,
     ) -> CategorySchema:
         pass
 
@@ -40,5 +42,15 @@ class BaseQuestionService(ABC):
         pass
 
     @abstractmethod
-    async def create_prompt(self, prompt_create: PromptCreateSchema) -> PromptSchema:
+    async def create_prompt(
+        self,
+        user_id: int,
+        prompt_create: PromptCreateSchema,
+    ) -> PromptSchema:
+        pass
+
+    @abstractmethod
+    async def update_prompt(
+        self, user_id: int, prompt_update: PromptUpdateSchema
+    ) -> PromptSchema:
         pass

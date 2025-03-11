@@ -46,7 +46,7 @@ JEOPARDY_DB_ISOLATION_LEVEL = "SERIALIZABLE"
 JEOPARDY_DB_ECHO = "false"
 
 [tool.coverage.report]
-fail_under = 60  # temporary
+fail_under = 80
 
 [tool.ruff.format]
 quote-style = "double"

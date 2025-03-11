@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from typing import Annotated
+from typing import Annotated, AsyncIterator
 
 from fastapi import Depends
 from sqlalchemy import Executable
@@ -18,7 +18,7 @@ from jlib.db import DBManager
 from jlib.db.utilities import get_db_manager
 from jlib.errors.database import DatabaseDetailError
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 COMMON_DB_ERRORS = (
     ProgrammingError,
@@ -82,7 +82,7 @@ class RelationalDAL:
             return realized_result
 
     @contextlib.asynccontextmanager
-    async def session(self):
+    async def session(self) -> AsyncIterator[AsyncSession]:
         try:
             async with self._db_manager.session() as session:
                 yield session
@@ -91,7 +91,7 @@ class RelationalDAL:
 
     @classmethod
     def _handle_error(cls, error: Exception, statement: str) -> None:
-        logger.error(
+        _logger.error(
             "Database error, statement: {0},\ntype: {1},\nmessage: {2}".format(
                 statement,
                 type(error),

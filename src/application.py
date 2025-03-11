@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
 import api
+from jlib.errors import add_error_handlers
 from lifespan import lifespan
 from settings import settings
 
@@ -12,3 +13,4 @@ app = FastAPI(
 )
 
 app.include_router(api.router)
+add_error_handlers(app)

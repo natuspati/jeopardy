@@ -7,7 +7,9 @@ from models.user import UserModel
 
 
 def test_login_route(
-    client: TestClient, users: list[UserModel], users_data: list[dict]
+    client: TestClient,
+    users: list[UserModel],
+    users_data: list[dict],
 ):
     user_model = next((u for u in users if not u.deleted), None)
     user = next((u for u in users_data if u["username"] == user_model.username), None)

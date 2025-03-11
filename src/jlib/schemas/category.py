@@ -3,6 +3,7 @@ from typing import Annotated
 from pydantic import AfterValidator, Field
 
 from jlib.schemas.base import BaseSchema, OneFieldSetSchemaMixin
+from jlib.schemas.pagination import PaginatedResponseSchema
 from jlib.schemas.prompt import (
     PromptPriorityUpdateSchema,
     PromptSchema,
@@ -13,6 +14,11 @@ from jlib.schemas.prompt import (
 def _sort_prompts_by_priority(
     prompts: list[PromptShowSchema | PromptPriorityUpdateSchema],
 ) -> list[PromptShowSchema]:
+    seen = set()
+    for p in prompts:
+        if p.default_priority in seen:
+            raise ValueError("Prompts must have unique priorities")
+        seen.add(p.default_priority)
     prompts.sort(key=lambda p: p.default_priority)
     return prompts
 
@@ -69,6 +75,17 @@ class CategoryUpdateShowSchema(BaseSchema, OneFieldSetSchemaMixin):
 class CategoryFullUpdateSchema(BaseSchema):
     id: int
     name: str | None = None
+    owner_id: int
     prompts: Annotated[
         list[PromptPriorityUpdateSchema], AfterValidator(_sort_prompts_by_priority)
     ] = Field(default_factory=list)
+
+
+class PaginatedBasicCategorySchema(PaginatedResponseSchema[BasicCategorySchema]):
+    pass
+
+
+class PaginatedBasicCategoryShowSchema(
+    PaginatedResponseSchema[BasicCategoryShowSchema]
+):
+    pass
