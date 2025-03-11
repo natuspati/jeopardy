@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy import delete, insert
 
-from jlib.dals.relational_dal import RelationalDAL
+from jlib.dals import RelationalDAL
 from jlib.utils.auth import hash_password
 from models.user import UserModel
 

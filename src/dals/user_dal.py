@@ -1,7 +1,6 @@
 from sqlalchemy import insert, select, update
 
-from jlib.dals.relational_dal import RelationalDAL
-from jlib.dals.user_dal import BaseUserDAL
+from jlib.dals import BaseUserDAL, RelationalDAL
 from jlib.schemas.user import UserCreateSchema, UserUpdateSchema
 from models.user import UserModel
 

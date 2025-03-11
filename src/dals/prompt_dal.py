@@ -3,8 +3,7 @@ import asyncio
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
-from jlib.dals.prompt_dal import BasePromptDAL
-from jlib.dals.relational_dal import RelationalDAL
+from jlib.dals import BasePromptDAL, RelationalDAL
 from jlib.schemas.prompt import (
     PromptCreateSchema,
     PromptPriorityUpdateSchema,

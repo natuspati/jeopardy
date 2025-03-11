@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy import bindparam, delete, insert, select
 
-from jlib.dals.relational_dal import RelationalDAL
+from jlib.dals import RelationalDAL
 from jlib.errors.database import MissingRequiredDataInDBError
 from models.category import CategoryModel
 from models.prompt import PromptModel

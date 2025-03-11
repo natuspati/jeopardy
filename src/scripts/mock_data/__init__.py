@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from jlib.dals.relational_dal import RelationalDAL
+from jlib.dals import RelationalDAL
 from jlib.db.utilities import get_db_manager
 from models import import_models
 from scripts.mock_data.categories import create_categories

@@ -1,8 +1,7 @@
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import selectinload
 
-from jlib.dals.category_dal import BaseCategoryDAL
-from jlib.dals.relational_dal import RelationalDAL
+from jlib.dals import BaseCategoryDAL, RelationalDAL
 from jlib.schemas.category import CategoryCreateSchema, CategoryPartialUpdateSchema
 from models.category import CategoryModel
 

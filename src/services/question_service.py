@@ -3,8 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from dals import CategoryDAL, PromptDAL
-from jlib.dals.category_dal import BaseCategoryDAL
-from jlib.dals.prompt_dal import BasePromptDAL
+from jlib.dals import BaseCategoryDAL, BasePromptDAL
 from jlib.errors.auth import ForbiddenError
 from jlib.errors.request import BadRequestError
 from jlib.errors.resource import ResourceExistsError, ResourceNotFoundError

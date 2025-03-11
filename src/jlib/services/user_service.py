@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from jlib.dals.user_dal import BaseUserDAL
+from jlib.dals import BaseUserDAL
 from jlib.schemas.user import UserCreateSchema, UserSchema
 
 
