@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from jlib.errors.database import DBSessionManagerClosedError
-from jlib.types.database import ISOLATION_LEVEL_TYPE
+from jlib.types.database import IsolationLevelType
 
 _logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class DBManager:
         db_url: str | URL,
         db_echo: bool = False,
         db_echo_pool: bool = False,
-        db_isolation_level: ISOLATION_LEVEL_TYPE = "READ COMMITTED",
+        db_isolation_level: IsolationLevelType = "READ COMMITTED",
         db_expire_on_commit: bool = False,
         rollback: bool = False,
     ):

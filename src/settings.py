@@ -5,7 +5,7 @@ import sqlalchemy
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from jlib.enums import AppEnvironmentEnum
-from jlib.types.database import ISOLATION_LEVEL_TYPE
+from jlib.types.database import IsolationLevelType
 
 
 class Settings(BaseSettings):
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     db_name: str | None = "jeopardy"
     db_echo: bool = False
     db_echo_pool: bool = False
-    db_isolation_level: ISOLATION_LEVEL_TYPE = "READ COMMITTED"
+    db_isolation_level: IsolationLevelType = "READ COMMITTED"
     db_expire_on_commit: bool = False
 
     # Redis

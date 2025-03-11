@@ -1,6 +1,6 @@
 from typing import Literal
 
-ISOLATION_LEVEL_TYPE = Literal[
+IsolationLevelType = Literal[
     "SERIALIZABLE",
     "REPEATABLE READ",
     "READ COMMITTED",
