@@ -21,7 +21,7 @@ async def create_prompts(dal: RelationalDAL) -> None:
     _logger.info("Finished creating prompts")
 
 
-async def remote_prompts(dal: RelationalDAL) -> None:
+async def remove_prompts(dal: RelationalDAL) -> None:
     prompt_ids = {prompt["id"] for prompt in ALL_PROMPTS}
     stmt = delete(PromptModel).where(PromptModel.id.in_(prompt_ids))
     await dal.execute(stmt)

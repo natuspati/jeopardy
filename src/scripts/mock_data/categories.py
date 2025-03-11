@@ -30,7 +30,6 @@ CATEGORIES = [
 
 async def create_categories(dal: RelationalDAL) -> None:
     await _check_required_users_exist(dal)
-    await remove_categories(dal)
     stmt = insert(CategoryModel).values(CATEGORIES)
     await dal.execute(stmt)
     _logger.info("Finished creating categories")

@@ -48,33 +48,6 @@ def process_revision_directives(
     util.msg(f"Generated revision ID: {revision_id}")
 
 
-# def _run_migrations(connection: Connection) -> None:
-#     context.configure(
-#         connection=connection,
-#         target_metadata=target_metadata,
-#         process_revision_directives=process_revision_directives,
-#     )
-#
-#     with context.begin_transaction():
-#         context.run_migrations()
-#
-#
-# async def _run_async_migrations(connectable: AsyncEngine) -> None:
-#     async with connectable.connect() as connection:
-#         await connection.run_sync(_run_migrations)
-#         res = await connection.scalars(text("SELECT name FROM sqlite_master WHERE type='table';"))
-#         tables = res.all()
-#         print(f"DB tables: {tables}")
-#
-#     await connectable.dispose()
-#
-#
-# def _run_sync_migrations(connectable: Engine) -> None:
-#     with connectable.connect() as connection:
-#         _run_migrations(connection)
-#     connectable.dispose()
-
-
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -100,7 +73,11 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection):
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        process_revision_directives=process_revision_directives,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

@@ -2,7 +2,7 @@
 
 Revision ID: 0001
 Revises:
-Create Date: 2025-02-24 14:20:09.375099
+Create Date: 2025-03-11 22:11:48.231163
 
 """
 
@@ -55,10 +55,7 @@ def upgrade() -> None:
         sa.Column("default_priority", sa.SmallInteger(), nullable=False),
         sa.Column("category_id", sa.Integer(), nullable=False),
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.ForeignKeyConstraint(
-            ["category_id"],
-            ["category.id"],
-        ),
+        sa.ForeignKeyConstraint(["category_id"], ["category.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "default_priority", "category_id", name="uq_prompt_priority_in_category"

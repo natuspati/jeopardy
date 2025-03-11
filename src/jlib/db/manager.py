@@ -2,7 +2,7 @@ import contextlib
 import logging
 from typing import AsyncIterator
 
-from sqlalchemy import URL
+from sqlalchemy import URL, text
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncSession,
@@ -27,6 +27,7 @@ class DBManager:
         rollback: bool = False,
     ):
         self.db_url = db_url
+        self._force_fk_enabling = str(db_url).startswith("sqlite")
         self._engine = create_async_engine(
             url=db_url,
             echo=db_echo,
@@ -64,6 +65,7 @@ class DBManager:
 
         async with self._engine.begin() as connection:
             try:
+                await self._ensure_fks(connection)
                 yield connection
             except Exception as error:
                 _logger.exception(
@@ -91,6 +93,7 @@ class DBManager:
 
         async with self._sessionmaker() as session, session.begin():
             try:
+                await self._ensure_fks(session)
                 yield session
             except Exception as error:
                 _logger.exception(
@@ -102,3 +105,8 @@ class DBManager:
             else:
                 if self._rollback:
                     await session.rollback()
+
+    async def _ensure_fks(self, connectable: AsyncConnection | AsyncSession) -> None:
+        """Ensure foreign keys are enabled."""
+        if self._force_fk_enabling:
+            await connectable.execute(text("PRAGMA foreign_keys=ON;"))

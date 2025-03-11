@@ -31,7 +31,6 @@ USERS = [
 
 
 async def create_users(dal: RelationalDAL) -> None:
-    await remove_users(dal)
     stmt = insert(UserModel).values(USERS)
     await dal.execute(stmt)
     _logger.info("Finished creating users")

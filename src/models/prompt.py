@@ -24,7 +24,7 @@ class PromptModel(BaseDBModelID):
     answer_type: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     default_priority: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     category_id: Mapped[int] = mapped_column(
-        ForeignKey("category.id"),
+        ForeignKey("category.id", ondelete="CASCADE"),
         nullable=False,
     )
 
