@@ -47,10 +47,9 @@ async def test_create_preset(
     db_manager: DBManager,
 ):
     user = users[0]
-    new_preset = {
-        "name": "new preset",
-        "owner_id": user.id,
-    }
+
+    # success with provided name
+    new_preset = {"name": "new preset"}
     resp = client.post(
         "/api/v1/preset",
         json=new_preset,
@@ -60,5 +59,16 @@ async def test_create_preset(
     async with db_manager.session() as session:
         created_preset = await session.get(PresetModel, resp.json()["id"])
     assert created_preset
-    for field, value in new_preset.items():
-        assert value == getattr(created_preset, field)
+    assert created_preset.name == new_preset["name"]
+    assert created_preset.owner_id == user.id
+
+    # success without provided name
+    resp = client.post(
+        "/api/v1/preset",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_201_CREATED
+    async with db_manager.session() as session:
+        created_preset = await session.get(PresetModel, resp.json()["id"])
+    assert created_preset
+    assert created_preset.name
