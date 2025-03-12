@@ -10,9 +10,9 @@ def users_data() -> list[dict]:
             "deleted": False,
         },
         {
-            "username": "deleted_user",
+            "username": "user_2",
             "password": "password",
-            "deleted": True,
+            "deleted": False,
         },
     ]
 
@@ -85,5 +85,49 @@ def prompts_data() -> list[dict]:
             "answer_type": 1,
             "default_priority": 3,
             "category_id": 2,
+        },
+    ]
+
+
+@pytest.fixture
+def unpopulated_presets_data() -> list[dict]:
+    return [
+        {
+            "name": "preset_1",
+            "owner_id": 1,
+        },
+        {
+            "name": "preset_2",
+            "owner_id": 2,
+        },
+    ]
+
+
+@pytest.fixture
+def presets_data() -> list[dict]:
+    return [
+        {
+            "preset_id": 1,
+            "category_id": 1,
+        },
+        {
+            "preset_id": 1,
+            "category_id": 2,
+        },
+        {
+            "preset_id": 1,
+            "category_id": 3,
+        },
+        {
+            "preset_id": 2,
+            "category_id": 1,
+        },
+        {
+            "preset_id": 2,
+            "category_id": 2,
+        },
+        {
+            "preset_id": 2,
+            "category_id": 3,
         },
     ]

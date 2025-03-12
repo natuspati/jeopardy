@@ -17,11 +17,16 @@ from jlib.schemas.category import (
 )
 from jlib.schemas.pagination import PaginationSchema
 from jlib.schemas.prompt import PromptCreateSchema, PromptSchema, PromptUpdateSchema
-from jlib.services import BaseQuestionService, SchemaValidationServiceMixin
-from settings import settings
+from jlib.services import (
+    BaseQuestionService,
+    PaginationServiceMixin,
+    SchemaValidationServiceMixin,
+)
 
 
-class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
+class QuestionService(
+    BaseQuestionService, SchemaValidationServiceMixin, PaginationServiceMixin
+):
     def __init__(
         self,
         category_dal: Annotated[BaseCategoryDAL, Depends(CategoryDAL)],
@@ -157,8 +162,3 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
         if category.owner_id != user_id:
             raise ForbiddenError("User does not own the category")
         await self._prompt_dal.delete(prompt_id)
-
-    @classmethod
-    def _check_pagination(cls, pagination: PaginationSchema) -> None:
-        if pagination.limit is None or pagination.limit > settings.max_query_limit:
-            pagination.limit = settings.max_query_limit

@@ -19,3 +19,6 @@ class UserModel(BaseDBModelID):
     categories: Mapped[list["CategoryModel"]] = relationship(
         back_populates="owner",
     )
+    presets: Mapped[list["PresetModel"]] = relationship(
+        back_populates="owner",
+    )

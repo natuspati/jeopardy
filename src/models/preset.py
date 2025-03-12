@@ -4,13 +4,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from models.base import BaseDBModelID
 
 
-class CategoryModel(BaseDBModelID):
-    __tablename__ = "category"
+class PresetModel(BaseDBModelID):
+    __tablename__ = "preset"
 
     name: Mapped[str] = mapped_column(
         String(255),
-        unique=True,
-        index=True,
         nullable=False,
     )
     owner_id: Mapped[int] = mapped_column(
@@ -20,18 +18,14 @@ class CategoryModel(BaseDBModelID):
     )
 
     owner: Mapped["UserModel"] = relationship(
-        back_populates="categories",
+        back_populates="presets",
     )
-    prompts: Mapped[list["PromptModel"]] = relationship(
-        back_populates="category",
-        cascade="all, delete, delete-orphan",
-    )
-    presets: Mapped[list["PresetModel"]] = relationship(
+    categories: Mapped[list["CategoryModel"]] = relationship(
         secondary="preset_category",
-        back_populates="categories",
+        back_populates="presets",
         viewonly=True,
     )
-    preset_associations: Mapped[list["PresetCategoryModel"]] = relationship(
-        back_populates="category",
+    category_associations: Mapped[list["PresetCategoryModel"]] = relationship(
+        back_populates="preset",
         cascade="all, delete, delete-orphan",
     )

@@ -1,8 +1,12 @@
 import pytest
+from sqlalchemy import insert, select
+from sqlalchemy.orm import selectinload
 
 from jlib.db import DBManager
 from jlib.utils.auth import hash_password
 from models.category import CategoryModel
+from models.preset import PresetModel
+from models.preset_category import PresetCategoryModel
 from models.prompt import PromptModel
 from models.user import UserModel
 
@@ -50,3 +54,20 @@ async def prompts(
         session.add_all(prompt_models)
         await session.commit()
     return prompt_models
+
+
+@pytest.fixture
+async def presets(
+    unpopulated_presets_data: list[dict],
+    presets_data: list[dict],
+    categories: list[CategoryModel],
+    prompts: list[PromptModel],
+    db_manager: DBManager,
+) -> list[PresetModel]:
+    async with db_manager.session() as session:
+        await session.execute(insert(PresetModel).values(unpopulated_presets_data))
+        await session.execute(insert(PresetCategoryModel).values(presets_data))
+        res = await session.scalars(
+            select(PresetModel).options(selectinload(PresetModel.categories))
+        )
+    return res.all()
