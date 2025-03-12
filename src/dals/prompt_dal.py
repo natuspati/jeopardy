@@ -1,6 +1,6 @@
 import asyncio
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import selectinload
 
 from jlib.dals import BasePromptDAL, RelationalDAL
@@ -72,4 +72,8 @@ class PromptDAL(BasePromptDAL, RelationalDAL):
                 )
             )
         )
+        await self.execute(stmt)
+
+    async def delete(self, prompt_id: int) -> None:
+        stmt = delete(PromptModel).where(PromptModel.id == prompt_id)
         await self.execute(stmt)

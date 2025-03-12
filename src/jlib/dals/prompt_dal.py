@@ -26,3 +26,7 @@ class BasePromptDAL(ABC):
     @abstractmethod
     async def update(self, prompt: PromptUpdateSchema) -> None:
         pass
+
+    @abstractmethod
+    async def delete(self, prompt_id: int) -> None:
+        pass

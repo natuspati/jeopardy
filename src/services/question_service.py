@@ -144,6 +144,20 @@ class QuestionService(BaseQuestionService, SchemaValidationServiceMixin):
         updated_prompt = await self._prompt_dal.select_by_id(prompt_update.id)
         return self._validate(updated_prompt, PromptSchema)
 
+    async def delete_prompt(
+        self,
+        user_id: int,
+        category_id: int,
+        prompt_id: int,
+    ) -> None:
+        category = await self.get_category_by_id(category_id)
+        prompt = next((p for p in category.prompts if p.id == prompt_id), None)
+        if not category or not prompt:
+            return None
+        if category.owner_id != user_id:
+            raise ForbiddenError("User does not own the category")
+        await self._prompt_dal.delete(prompt_id)
+
     @classmethod
     def _check_pagination(cls, pagination: PaginationSchema) -> None:
         if pagination.limit is None or pagination.limit > settings.max_query_limit:

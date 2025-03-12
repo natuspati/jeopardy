@@ -51,6 +51,17 @@ class BaseQuestionService(ABC):
 
     @abstractmethod
     async def update_prompt(
-        self, user_id: int, prompt_update: PromptUpdateSchema
+        self,
+        user_id: int,
+        prompt_update: PromptUpdateSchema,
     ) -> PromptSchema:
+        pass
+
+    @abstractmethod
+    async def delete_prompt(
+        self,
+        user_id: int,
+        category_id: int,
+        prompt_id: int,
+    ) -> None:
         pass

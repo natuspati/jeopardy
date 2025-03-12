@@ -4,6 +4,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
+from jlib.db import DBManager
 from models.category import CategoryModel
 from models.prompt import PromptModel
 from models.user import UserModel
@@ -130,3 +131,51 @@ def test_update_prompt(
         headers=token_generator(user),
     )
     assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+
+async def test_delete_prompt(
+    client: TestClient,
+    users: list[UserModel],
+    categories: list[CategoryModel],
+    prompts: list[PromptModel],
+    token_generator: Callable[[UserModel], dict[str, str]],
+    db_manager: DBManager,
+):
+    user, wrong_user = users[0], users[1]
+    category = next((cat for cat in categories if cat.owner_id == user.id), None)
+    if not category:
+        pytest.fail("No category to delete with provided user")
+    prompt = next((p for p in prompts if p.category_id == category.id), None)
+    if not prompt:
+        pytest.fail("No prompt to delete")
+
+        # wrong user trying to delete prompt
+        resp = client.delete(
+            f"/api/v1/category/{category.id}/prompt/{prompt.id}",
+            headers=token_generator(wrong_user),
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    # success
+    resp = client.delete(
+        f"/api/v1/category/{category.id}/prompt/{prompt.id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+    async with db_manager.session() as session:
+        deleted_prompt = await session.get(PromptModel, prompt.id)
+        assert not deleted_prompt
+
+    # non-existent prompt
+    non_existent_prompt_id = max((p.id for p in prompts)) + 1
+    resp = client.delete(
+        f"/api/v1/category/{category.id}/prompt/{non_existent_prompt_id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+    # wrong category
+    resp = client.delete(
+        f"/api/v1/category/{category.id + 1}/prompt/{prompt.id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_204_NO_CONTENT

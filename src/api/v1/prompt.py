@@ -69,3 +69,25 @@ async def update_prompt(
             **prompt_update.model_dump(exclude_none=True),
         ),
     )
+
+
+@router.delete(
+    "/{prompt_id}",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=generate_responses(
+        (status.HTTP_401_UNAUTHORIZED, "User not authenticated"),
+        (status.HTTP_403_FORBIDDEN, "User does not own the category"),
+    ),
+)
+async def delete_prompt(
+    category_id: int,
+    prompt_id: int,
+    current_user: Annotated[UserSchema, Depends(get_current_user)],
+    question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
+):
+    return await question_service.delete_prompt(
+        user_id=current_user.id,
+        category_id=category_id,
+        prompt_id=prompt_id,
+    )
