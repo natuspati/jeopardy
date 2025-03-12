@@ -5,7 +5,11 @@ from fastapi import Depends
 from dals import PresetDAL
 from jlib.dals import BasePresetDAL
 from jlib.schemas.pagination import PaginationSchema
-from jlib.schemas.preset import BasicPresetSchema, PaginatedBasicPresetSchema
+from jlib.schemas.preset import (
+    BasicPresetSchema,
+    PaginatedBasicPresetSchema,
+    PresetCreateSchema,
+)
 from jlib.services import (
     BasePresetService,
     PaginationServiceMixin,
@@ -37,3 +41,7 @@ class PresetService(
             items=self._validate(presets, BasicPresetSchema),
             pagination=pagination,
         )
+
+    async def create_preset(self, preset: PresetCreateSchema) -> BasicPresetSchema:
+        created_preset = await self._preset_dal.create(preset)
+        return self._validate(created_preset, BasicPresetSchema)

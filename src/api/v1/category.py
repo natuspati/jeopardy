@@ -56,6 +56,7 @@ async def get_category(
     responses=generate_responses(
         (status.HTTP_401_UNAUTHORIZED, "User not authenticated"),
         (status.HTTP_409_CONFLICT, "Category with a given name already exists"),
+        (status.HTTP_422_UNPROCESSABLE_ENTITY, "Wrong data provided"),
     ),
 )
 async def create_category(

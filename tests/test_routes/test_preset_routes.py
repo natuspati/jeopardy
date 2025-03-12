@@ -4,6 +4,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
+from jlib.db import DBManager
 from models.preset import PresetModel
 from models.user import UserModel
 
@@ -37,3 +38,27 @@ def test_get_presets(
         assert selected_preset
         for field, value in fetched_preset.items():
             assert value == getattr(selected_preset, field)
+
+
+async def test_create_preset(
+    client: TestClient,
+    users: list[UserModel],
+    token_generator: Callable[[UserModel], dict[str, str]],
+    db_manager: DBManager,
+):
+    user = users[0]
+    new_preset = {
+        "name": "new preset",
+        "owner_id": user.id,
+    }
+    resp = client.post(
+        "/api/v1/preset",
+        json=new_preset,
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_201_CREATED
+    async with db_manager.session() as session:
+        created_preset = await session.get(PresetModel, resp.json()["id"])
+    assert created_preset
+    for field, value in new_preset.items():
+        assert value == getattr(created_preset, field)
