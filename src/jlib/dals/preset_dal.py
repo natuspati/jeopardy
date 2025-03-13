@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from jlib.schemas.preset import PresetCreateSchema
+from jlib.schemas.preset import PresetCreateSchema, PresetUpdateSchema
 
 
 class BasePresetDAL(ABC):
@@ -14,6 +14,10 @@ class BasePresetDAL(ABC):
 
     @abstractmethod
     async def create(self, preset: PresetCreateSchema):
+        pass
+
+    @abstractmethod
+    async def update(self, preset: PresetUpdateSchema):
         pass
 
     @abstractmethod

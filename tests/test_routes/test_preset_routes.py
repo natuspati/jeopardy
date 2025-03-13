@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from jlib.db import DBManager
 from models.preset import PresetModel
 from models.preset_category import PresetCategoryModel
+from models.prompt import PromptModel
 from models.user import UserModel
 
 
@@ -42,6 +43,55 @@ def test_get_presets(
             assert value == getattr(selected_preset, field)
 
 
+def test_get_preset(
+    client: TestClient,
+    users: list[UserModel],
+    prompts: list[PromptModel],
+    presets: list[PresetModel],
+    token_generator: Callable[[UserModel], dict[str, str]],
+):
+    user, wrong_user = users[0], users[1]
+    preset = next((p for p in presets if p.owner_id == user.id), None)
+    if not preset:
+        pytest.fail("No preset for provided user")
+
+    # success
+    resp = client.get(
+        f"/api/v1/preset/{preset.id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    fetched_preset = resp.json()
+    fetched_categories = fetched_preset.pop("categories")
+    for field, value in fetched_preset.items():
+        assert value == getattr(preset, field)
+    preset_category_ids = set(cat.id for cat in preset.categories)
+    category_prompts = {
+        cat_id: {p.id for p in prompts if p.category_id == cat_id}
+        for cat_id in preset_category_ids
+    }
+    for category in fetched_categories:
+        cat_id = category.pop("id")
+        assert cat_id in preset_category_ids
+        for prompt in category.pop("prompts"):
+            assert prompt["id"] in category_prompts[cat_id]
+
+    # user does not own preset
+    resp = client.get(
+        f"/api/v1/preset/{preset.id}",
+        headers=token_generator(wrong_user),
+    )
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    # preset does not exist
+    non_existent_preset_id = max((p.id for p in presets)) + 1
+    resp = client.get(
+        f"/api/v1/preset/{non_existent_preset_id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+
 async def test_create_preset(
     client: TestClient,
     user: UserModel,
@@ -72,6 +122,61 @@ async def test_create_preset(
         created_preset = await session.get(PresetModel, resp.json()["id"])
     assert created_preset
     assert created_preset.name
+
+
+def test_update_preset(
+    client: TestClient,
+    users: list[UserModel],
+    presets: list[PresetModel],
+    token_generator: Callable[[UserModel], dict[str, str]],
+):
+    user, wrong_user = users[0], users[1]
+    preset = next((p for p in presets if p.owner_id == user.id), None)
+    if not preset:
+        pytest.fail("No preset to delete with provided user")
+
+    # success
+    new_preset = "new preset"
+    new_categories = {cat.id for cat in preset.categories[1:]}
+    resp = client.patch(
+        f"/api/v1/preset/{preset.id}",
+        json={"name": new_preset, "categories": list(new_categories)},
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    fetched_preset: dict = resp.json()
+    assert fetched_preset["name"] == new_preset
+    assert {cat["id"] for cat in fetched_preset["categories"]} == new_categories
+
+    # user does not own preset
+    resp = client.patch(
+        f"/api/v1/preset/{preset.id}",
+        json={"name": new_preset, "categories": list(new_categories)},
+        headers=token_generator(wrong_user),
+    )
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    # wrong preset
+    non_existent_preset_id = max((p.id for p in presets)) + 1
+    resp = client.patch(
+        f"/api/v1/preset/{non_existent_preset_id}",
+        json={"name": new_preset, "categories": list(new_categories)},
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+    # invalid input
+    resp = client.patch(
+        f"/api/v1/preset/{preset.id}",
+        json={"categories": 1},
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    resp = client.patch(
+        f"/api/v1/preset/{preset.id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 async def test_delete_preset(

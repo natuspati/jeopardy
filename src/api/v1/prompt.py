@@ -35,6 +35,9 @@ async def create_prompt(
     current_user: Annotated[UserSchema, Depends(get_current_user)],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Create prompt.
+    """
     return await question_service.create_prompt(
         user_id=current_user.id,
         prompt_create=PromptCreateSchema(
@@ -61,6 +64,9 @@ async def update_prompt(
     current_user: Annotated[UserSchema, Depends(get_current_user)],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Update prompt.
+    """
     return await question_service.update_prompt(
         user_id=current_user.id,
         prompt_update=PromptUpdateSchema(
@@ -86,6 +92,9 @@ async def delete_prompt(
     current_user: Annotated[UserSchema, Depends(get_current_user)],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Delete prompt.
+    """
     return await question_service.delete_prompt(
         user_id=current_user.id,
         category_id=category_id,

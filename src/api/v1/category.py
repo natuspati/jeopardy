@@ -29,6 +29,9 @@ async def get_categories(
     pagination: Annotated[PaginationSchema, Query()],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Get categories.
+    """
     return await question_service.get_categories(pagination=pagination)
 
 
@@ -43,6 +46,9 @@ async def get_category(
     category_id: int,
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Get category with prompts.
+    """
     category = await question_service.get_category_by_id(category_id)
     if not category:
         raise ResourceNotFoundError(f"Category with id {category_id} not found")
@@ -64,6 +70,9 @@ async def create_category(
     current_user: Annotated[UserSchema, Depends(get_current_user)],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Create category.
+    """
     return await question_service.create_category(
         CategoryCreateSchema(
             owner_id=current_user.id,
@@ -89,6 +98,9 @@ async def update_category(
     user: Annotated[UserSchema, Depends(get_current_user)],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Update category name or default priority of its prompts.
+    """
     return await question_service.update_category(
         CategoryFullUpdateSchema(
             id=category_id,
@@ -113,4 +125,7 @@ async def delete_category(
     current_user: Annotated[UserSchema, Depends(get_current_user)],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
 ):
+    """
+    Delete category.
+    """
     return await question_service.delete_category(category_id, current_user.id)

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import Field
 
-from jlib.schemas.base import BaseSchema
+from jlib.schemas.base import BaseSchema, OneFieldSetSchemaMixin
 from jlib.schemas.category import CategorySchema
 from jlib.schemas.pagination import PaginatedResponseSchema
 from settings import settings
@@ -34,6 +34,16 @@ class PresetCreateShowSchema(BaseSchema):
 
 class PresetCreateSchema(BaseSchema):
     name: str = Field(default_factory=_generate_preset_name)
+    owner_id: int
+
+
+class PresetUpdateShowSchema(BaseSchema, OneFieldSetSchemaMixin):
+    name: str | None = None
+    categories: list[int] = Field(default_factory=list)
+
+
+class PresetUpdateSchema(PresetUpdateShowSchema):
+    id: int
     owner_id: int
 
 

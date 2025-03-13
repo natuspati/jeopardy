@@ -25,6 +25,9 @@ async def register_user(
     user_create: UserCreateSchema,
     user_service: Annotated[BaseUserService, Depends(UserService)],
 ):
+    """
+    Register new user.
+    """
     return await user_service.register(user_create)
 
 
@@ -35,6 +38,9 @@ async def register_user(
 async def get_user_details(
     current_user: Annotated[UserSchema, Depends(auth.auth_utils.get_current_user)],
 ):
+    """
+    Get user details.
+    """
     return current_user
 
 
@@ -43,6 +49,9 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_service: Annotated[BaseUserService, Depends(UserService)],
 ) -> TokenSchema:
+    """
+    Get user token.
+    """
     return await auth.authenticate(
         user_service,
         form_data.username,

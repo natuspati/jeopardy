@@ -43,7 +43,7 @@ class CategoryDAL(BaseCategoryDAL, RelationalDAL):
         stmt = (
             update(CategoryModel)
             .where(CategoryModel.id == category_id)
-            .values(**category.model_dump())
+            .values(**category.model_dump(exclude={"id"}))
         )
         await self.execute(stmt)
 
