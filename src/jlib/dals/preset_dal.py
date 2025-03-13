@@ -9,5 +9,13 @@ class BasePresetDAL(ABC):
         pass
 
     @abstractmethod
+    async def select_by_id(self, preset_id: int):
+        pass
+
+    @abstractmethod
     async def create(self, preset: PresetCreateSchema):
+        pass
+
+    @abstractmethod
+    async def delete(self, preset_id: int) -> None:
         pass

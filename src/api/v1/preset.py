@@ -56,3 +56,20 @@ async def create_preset(
     return await preset_service.create_preset(
         preset=PresetCreateSchema.model_validate(preset_data),
     )
+
+
+@router.delete(
+    "/{preset_id}",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=generate_responses(
+        (status.HTTP_401_UNAUTHORIZED, "User not authenticated"),
+        (status.HTTP_403_FORBIDDEN, "User does not own the preset"),
+    ),
+)
+async def delete_preset(
+    preset_id: int,
+    user: Annotated[UserSchema, Depends(get_current_user)],
+    preset_service: Annotated[BasePresetService, Depends(PresetService)],
+):
+    await preset_service.delete_preset(preset_id, user.id)

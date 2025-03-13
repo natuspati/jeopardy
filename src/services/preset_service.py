@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from dals import PresetDAL
 from jlib.dals import BasePresetDAL
+from jlib.errors.auth import ForbiddenError
 from jlib.schemas.pagination import PaginationSchema
 from jlib.schemas.preset import (
     BasicPresetSchema,
@@ -45,3 +46,11 @@ class PresetService(
     async def create_preset(self, preset: PresetCreateSchema) -> BasicPresetSchema:
         created_preset = await self._preset_dal.create(preset)
         return self._validate(created_preset, BasicPresetSchema)
+
+    async def delete_preset(self, preset_id: int, user_id: int) -> None:
+        preset = await self._preset_dal.select_by_id(preset_id)
+        if not preset:
+            return None
+        if preset.owner_id != user_id:
+            raise ForbiddenError(f"User does not own the preset {preset_id}")
+        await self._preset_dal.delete(preset_id)

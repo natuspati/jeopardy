@@ -3,20 +3,22 @@ from typing import Callable
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from jlib.db import DBManager
 from models.preset import PresetModel
+from models.preset_category import PresetCategoryModel
 from models.user import UserModel
 
 
 def test_get_presets(
     client: TestClient,
     pagination: dict[str, int],
-    users: list[UserModel],
+    user: UserModel,
     presets: list[PresetModel],
     token_generator: Callable[[UserModel], dict[str, str]],
 ):
-    user = users[0]
     selected_presets = [p for p in presets if p.owner_id == user.id]
     if not user:
         pytest.fail("No user found")
@@ -42,12 +44,10 @@ def test_get_presets(
 
 async def test_create_preset(
     client: TestClient,
-    users: list[UserModel],
+    user: UserModel,
     token_generator: Callable[[UserModel], dict[str, str]],
     db_manager: DBManager,
 ):
-    user = users[0]
-
     # success with provided name
     new_preset = "new preset"
     resp = client.post(
@@ -72,3 +72,49 @@ async def test_create_preset(
         created_preset = await session.get(PresetModel, resp.json()["id"])
     assert created_preset
     assert created_preset.name
+
+
+async def test_delete_preset(
+    client: TestClient,
+    users: list[UserModel],
+    presets: list[PresetModel],
+    token_generator: Callable[[UserModel], dict[str, str]],
+    db_manager: DBManager,
+):
+    user, wrong_user = users[0], users[1]
+    preset = next((p for p in presets if p.owner_id == user.id), None)
+    if not preset:
+        pytest.fail("No preset to delete with provided user")
+
+    # user does not own preset
+    resp = client.delete(
+        f"/api/v1/preset/{preset.id}",
+        headers=token_generator(wrong_user),
+    )
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    # preset does not exist
+    non_existent_preset_id = max((p.id for p in presets)) + 1
+    resp = client.delete(
+        f"/api/v1/preset/{non_existent_preset_id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+
+    # success
+    resp = client.delete(
+        f"/api/v1/preset/{preset.id}",
+        headers=token_generator(user),
+    )
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+    async with db_manager.session() as session:
+        session: AsyncSession
+        deleted_preset = await session.get(PresetModel, preset.id)
+        assert not deleted_preset
+
+        preset_categories = await session.scalars(
+            select(PresetCategoryModel).where(
+                PresetCategoryModel.preset_id == preset.id
+            )
+        )
+        assert not preset_categories.all()
