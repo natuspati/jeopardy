@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from jlib.schemas.category import PromptCategorySchema
 from jlib.schemas.prompt import (
     PromptCreateSchema,
     PromptPriorityUpdateSchema,
@@ -9,7 +10,7 @@ from jlib.schemas.prompt import (
 
 class BasePromptDAL(ABC):
     @abstractmethod
-    async def select_by_id(self, prompt_id: int):
+    async def select_by_id(self, prompt_id: int) -> PromptCategorySchema | None:
         pass
 
     @abstractmethod

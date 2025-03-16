@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_pass: str | None = None
     redis_socket_timeout: int = 3
-    redis_default_expiration_time: int | None = 60 * 60  # 1 hour
+    redis_default_expiration_time: int | None = 7 * 24 * 60  # in minutes, 1 week
     redis_encoding: str = "utf-8"
     redis_namespace: str = "jeopardy_"
     redis_empty_value: str = "not_found"

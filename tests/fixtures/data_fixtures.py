@@ -14,6 +14,11 @@ def users_data() -> list[dict]:
             "password": "password",
             "deleted": False,
         },
+        {
+            "username": "user_3",
+            "password": "password",
+            "deleted": False,
+        },
     ]
 
 

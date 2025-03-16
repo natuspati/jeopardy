@@ -5,6 +5,7 @@ from pydantic import AfterValidator, Field
 from jlib.schemas.base import BaseSchema, OneFieldSetSchemaMixin
 from jlib.schemas.pagination import PaginatedResponseSchema
 from jlib.schemas.prompt import (
+    PromptInGameSchema,
     PromptPriorityUpdateSchema,
     PromptSchema,
     PromptShowSchema,
@@ -27,9 +28,7 @@ class CategorySchema(BaseSchema):
     id: int
     name: str
     owner_id: int
-    prompts: list[PromptSchema] = Field(
-        default_factory=list,
-    )
+    prompts: list[PromptSchema] = Field(default_factory=list)
 
 
 class BasicCategorySchema(BaseSchema):
@@ -81,6 +80,10 @@ class CategoryFullUpdateSchema(BaseSchema):
     ] = Field(default_factory=list)
 
 
+class PromptCategorySchema(PromptSchema):
+    category: BasicCategorySchema
+
+
 class PaginatedBasicCategorySchema(PaginatedResponseSchema[BasicCategorySchema]):
     pass
 
@@ -89,3 +92,11 @@ class PaginatedBasicCategoryShowSchema(
     PaginatedResponseSchema[BasicCategoryShowSchema]
 ):
     pass
+
+
+class CategoryInGameSchema(BaseSchema):
+    id: int
+    name: str
+    prompts: Annotated[
+        list[PromptInGameSchema], AfterValidator(_sort_prompts_by_priority)
+    ] = Field(default_factory=list)

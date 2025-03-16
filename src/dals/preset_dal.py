@@ -3,23 +3,35 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from jlib.dals import BasePresetDAL, RelationalDAL
-from jlib.schemas.preset import PresetCreateSchema, PresetUpdateSchema
+from jlib.schemas.preset import (
+    BasicPresetSchema,
+    PresetCreateSchema,
+    PresetSchema,
+    PresetUpdateSchema,
+)
+from jlib.utils.validation import validate_model
 from models.category import CategoryModel
 from models.preset import PresetModel
 from models.preset_category import PresetCategoryModel
 
 
 class PresetDAL(BasePresetDAL, RelationalDAL):
-    async def select(self, user_id: int, offset: int, limit: int) -> list[PresetModel]:
+    async def select(
+        self,
+        user_id: int,
+        offset: int,
+        limit: int,
+    ) -> list[BasicPresetSchema]:
         stmt = (
             select(PresetModel)
             .where(PresetModel.owner_id == user_id)
             .offset(offset)
             .limit(limit)
         )
-        return await self.scalars(stmt)
+        presets = await self.scalars(stmt)
+        return validate_model(presets, BasicPresetSchema)
 
-    async def select_by_id(self, preset_id: int) -> PresetModel | None:
+    async def select_by_id(self, preset_id: int) -> PresetSchema | None:
         stmt = (
             select(PresetModel)
             .options(
@@ -27,17 +39,18 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
             )
             .where(PresetModel.id == preset_id)
         )
-        return await self.scalar(stmt)
+        preset = await self.scalar(stmt)
+        return validate_model(preset, PresetSchema)
 
-    async def create(self, preset: PresetCreateSchema) -> PresetModel:
+    async def create(self, preset: PresetCreateSchema) -> BasicPresetSchema:
         preset_in_db = PresetModel(**preset.model_dump())
         async with self.session() as session:
             session.add(preset_in_db)
             await session.flush()
             await session.refresh(preset_in_db)
-        return preset_in_db
+        return validate_model(preset_in_db, BasicPresetSchema)
 
-    async def update(self, preset: PresetUpdateSchema) -> PresetModel:
+    async def update(self, preset: PresetUpdateSchema) -> PresetSchema:
         async with self.session() as session:
             if preset.name:
                 await self._update_name(session, preset)
@@ -51,7 +64,9 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
 
     @classmethod
     async def _update_name(
-        cls, session: AsyncSession, preset: PresetUpdateSchema
+        cls,
+        session: AsyncSession,
+        preset: PresetUpdateSchema,
     ) -> None:
         stmt = (
             update(PresetModel)
@@ -62,7 +77,9 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
 
     @classmethod
     async def _update_categories(
-        cls, session: AsyncSession, preset: PresetUpdateSchema
+        cls,
+        session: AsyncSession,
+        preset: PresetUpdateSchema,
     ) -> None:
         existing_stmt = select(PresetCategoryModel.category_id).where(
             PresetCategoryModel.preset_id == preset.id

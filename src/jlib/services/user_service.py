@@ -1,22 +1,22 @@
 from abc import ABC, abstractmethod
 
-from jlib.dals import BaseUserDAL
 from jlib.schemas.user import UserCreateSchema, UserSchema
 
 
 class BaseUserService(ABC):
-    def __init__(self, user_dal: BaseUserDAL):
-        self._dal = user_dal
-
     @abstractmethod
     async def get_by_id(
-        self, user_id: int, allow_deleted: bool = False
+        self,
+        user_id: int,
+        allow_deleted: bool = False,
     ) -> UserSchema | None:
         pass
 
     @abstractmethod
     async def get_by_username(
-        self, username: str, allow_deleted: bool = False
+        self,
+        username: str,
+        allow_deleted: bool = False,
     ) -> UserSchema | None:
         pass
 

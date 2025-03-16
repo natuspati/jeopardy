@@ -4,22 +4,25 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.orm import selectinload
 
 from jlib.dals import BasePromptDAL, RelationalDAL
+from jlib.schemas.category import PromptCategorySchema
 from jlib.schemas.prompt import (
     PromptCreateSchema,
     PromptPriorityUpdateSchema,
     PromptUpdateSchema,
 )
+from jlib.utils.validation import validate_model
 from models.prompt import PromptModel
 
 
 class PromptDAL(BasePromptDAL, RelationalDAL):
-    async def select_by_id(self, prompt_id: int) -> PromptModel | None:
+    async def select_by_id(self, prompt_id: int) -> PromptCategorySchema | None:
         stmt = (
             select(PromptModel)
             .options(selectinload(PromptModel.category))
             .where(PromptModel.id == prompt_id)
         )
-        return await self.scalar(stmt)
+        prompt = await self.scalar(stmt)
+        return validate_model(prompt, PromptCategorySchema)
 
     async def create(self, prompt: PromptCreateSchema):
         prompt_in_db = PromptModel(**prompt.model_dump(mode="json"))

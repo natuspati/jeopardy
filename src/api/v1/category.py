@@ -24,7 +24,7 @@ router = APIRouter(prefix="/category", tags=["question"])
 router.include_router(prompt.router)
 
 
-@router.get("/", response_model=PaginatedBasicCategoryShowSchema)
+@router.get("", response_model=PaginatedBasicCategoryShowSchema)
 async def get_categories(
     pagination: Annotated[PaginationSchema, Query()],
     question_service: Annotated[BaseQuestionService, Depends(QuestionService)],
@@ -56,7 +56,7 @@ async def get_category(
 
 
 @router.post(
-    "/",
+    "",
     status_code=status.HTTP_201_CREATED,
     response_model=BasicCategoryShowSchema,
     responses=generate_responses(

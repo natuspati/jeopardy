@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, Field
 
-from jlib.enums.prompt import AnswerTypeEnum, QuestionTypeEnum
+from jlib.enums import AnswerTypeEnum, QuestionTypeEnum
 from jlib.schemas.base import BaseSchema, OneFieldSetSchemaMixin
 from jlib.types.prompt import AnswerShowType, QuestionShowType
 
@@ -17,7 +17,8 @@ def _convert_question_type_to_str(question_type: int | str | QuestionTypeEnum) -
         try:
             return QuestionTypeEnum[question_type].name.lower()
         except KeyError:
-            raise ValueError(f"Invalid question type: {question_type}")
+            return question_type
+            # raise ValueError(f"Invalid question type: {question_type}")
 
 
 def _convert_str_to_question_type(
@@ -44,7 +45,8 @@ def _convert_answer_type_to_str(answer_type: int | str | AnswerTypeEnum) -> str:
         try:
             return AnswerTypeEnum[answer_type].name.lower()
         except KeyError:
-            raise ValueError(f"Invalid question type: {answer_type}")
+            return answer_type
+            # raise ValueError(f"Invalid question type: {answer_type}")
 
 
 def _convert_str_to_answer_type(
@@ -127,3 +129,7 @@ class PromptUpdateSchema(BaseSchema):
     answer_type: Annotated[
         QuestionTypeEnum | None, BeforeValidator(_convert_str_to_answer_type)
     ] = None
+
+
+class PromptInGameSchema(PromptShowSchema):
+    available: bool = True

@@ -19,7 +19,7 @@ router = APIRouter(prefix="/{category_id}/prompt")
 
 
 @router.post(
-    "/",
+    "",
     status_code=status.HTTP_201_CREATED,
     response_model=PromptShowSchema,
     responses=generate_responses(

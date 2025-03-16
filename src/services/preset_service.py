@@ -16,14 +16,11 @@ from jlib.schemas.preset import (
 )
 from jlib.services import (
     BasePresetService,
-    PaginationServiceMixin,
-    SchemaValidationServiceMixin,
 )
+from jlib.utils.pagination import check_pagination
 
 
-class PresetService(
-    BasePresetService, SchemaValidationServiceMixin, PaginationServiceMixin
-):
+class PresetService(BasePresetService):
     def __init__(
         self,
         preset_dal: Annotated[BasePresetDAL, Depends(PresetDAL)],
@@ -35,14 +32,14 @@ class PresetService(
         user_id: int,
         pagination: PaginationSchema,
     ) -> PaginatedBasicPresetSchema:
-        self._check_pagination(pagination)
+        check_pagination(pagination)
         presets = await self._preset_dal.select(
             user_id=user_id,
             offset=pagination.offset,
             limit=pagination.limit,
         )
         return PaginatedBasicPresetSchema.paginate(
-            items=self._validate(presets, BasicPresetSchema),
+            items=presets,
             pagination=pagination,
         )
 
@@ -52,11 +49,10 @@ class PresetService(
             raise ResourceNotFoundError(f"Preset with id {preset_id} does not exist")
         if preset.owner_id != user_id:
             raise ForbiddenError(f"User does not own the preset {preset_id}")
-        return self._validate(preset, PresetSchema)
+        return preset
 
     async def create_preset(self, preset: PresetCreateSchema) -> BasicPresetSchema:
-        created_preset = await self._preset_dal.create(preset)
-        return self._validate(created_preset, BasicPresetSchema)
+        return await self._preset_dal.create(preset)
 
     async def update_preset(self, preset_update: PresetUpdateSchema) -> PresetSchema:
         preset = await self._preset_dal.select_by_id(preset_update.id)
@@ -66,8 +62,7 @@ class PresetService(
             )
         if preset.owner_id != preset_update.owner_id:
             raise ForbiddenError(f"User does not own the preset {preset_update.id}")
-        updated_preset = await self._preset_dal.update(preset_update)
-        return self._validate(updated_preset, PresetSchema)
+        return await self._preset_dal.update(preset_update)
 
     async def delete_preset(self, preset_id: int, user_id: int) -> None:
         preset = await self._preset_dal.select_by_id(preset_id)

@@ -22,7 +22,7 @@ router = APIRouter(prefix="/preset", tags=["preset"])
 
 
 @router.get(
-    "/",
+    "",
     response_model=PaginatedBasicPresetSchema,
     responses=generate_responses(
         (status.HTTP_401_UNAUTHORIZED, "User not authenticated"),
@@ -63,7 +63,7 @@ async def get_preset(
 
 
 @router.post(
-    "/",
+    "",
     status_code=status.HTTP_201_CREATED,
     response_model=BasicPresetSchema,
     responses=generate_responses(
