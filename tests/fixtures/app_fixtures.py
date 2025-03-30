@@ -8,8 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from application import app
-from jlib.db import DBManager
-from jlib.db.utilities import get_db_manager
+from jlib.db import DBManager, get_db_manager
 from jlib.redis.client import get_redis_client
 from models.base import meta
 from settings import settings
@@ -36,7 +35,6 @@ async def db_manager() -> AsyncIterator[DBManager]:
 @pytest.fixture
 async def redis_client() -> AsyncIterator[fakeredis.FakeAsyncRedis]:
     async with fakeredis.FakeAsyncRedis(
-        # host=settings.redis_host,
         port=settings.redis_port,
     ) as r_client:
         yield r_client

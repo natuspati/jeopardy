@@ -15,9 +15,17 @@ def pagination() -> dict[str, int]:
 
 
 @pytest.fixture
-def token_generator() -> Callable[[UserModel], dict[str, str]]:
-    def create_token(user: UserModel):
+def auth_query_param() -> Callable[[UserModel], dict[str, str]]:
+    def create_auth_query_param(user: UserModel):
+        return {"token": create_access_token(data={"sub": user.username})}
+
+    return create_auth_query_param
+
+
+@pytest.fixture
+def auth_header() -> Callable[[UserModel], dict[str, str]]:
+    def create_auth_header(user: UserModel):
         token = create_access_token(data={"sub": user.username})
         return {"Authorization": f"Bearer {token}"}
 
-    return create_token
+    return create_auth_header

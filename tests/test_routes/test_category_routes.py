@@ -1,5 +1,3 @@
-from typing import Callable
-
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -55,7 +53,7 @@ async def test_create_category(
     client: TestClient,
     user: UserModel,
     categories_data: list[dict],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
     db_manager: DBManager,
 ):
     # success
@@ -68,7 +66,7 @@ async def test_create_category(
     resp = client.post(
         "/api/v1/category",
         json=category_to_create,
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_201_CREATED
     async with db_manager.session() as session:
@@ -86,7 +84,7 @@ async def test_create_category(
     resp = client.post(
         "/api/v1/category",
         json=category_to_create,
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_409_CONFLICT
 
@@ -96,7 +94,7 @@ async def test_update_category(
     users: list[UserModel],
     categories: list[CategoryModel],
     prompts: list[PromptModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
     db_manager: DBManager,
 ):
     user, wrong_user = users[0], users[1]
@@ -110,7 +108,7 @@ async def test_update_category(
     resp = client.patch(
         f"/api/v1/category/{category.id}",
         json={"name": new_name},
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_200_OK
     async with db_manager.session() as session:
@@ -133,7 +131,7 @@ async def test_update_category(
     resp = client.patch(
         f"/api/v1/category/{category.id}",
         json={"prompts": updated_prompts},
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_200_OK
     fetched_prompts = resp.json()["prompts"]
@@ -148,7 +146,7 @@ async def test_update_category(
     resp = client.patch(
         f"/api/v1/category/{category.id}",
         json={"name": "new name"},
-        headers=token_generator(wrong_user),
+        headers=auth_header(wrong_user),
     )
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
@@ -156,14 +154,14 @@ async def test_update_category(
     resp = client.patch(
         f"/api/v1/category/{category.id}",
         json={"prompts": updated_prompts[:-1]},
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
     # empty data
     resp = client.patch(
         f"/api/v1/category/{category.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -172,7 +170,7 @@ async def test_delete_category(
     client: TestClient,
     users: list[UserModel],
     categories: list[CategoryModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
     db_manager: DBManager,
 ):
     user, wrong_user = users[0], users[1]
@@ -183,14 +181,14 @@ async def test_delete_category(
     # wrong user tries to delete
     resp = client.delete(
         f"/api/v1/category/{category.id}",
-        headers=token_generator(wrong_user),
+        headers=auth_header(wrong_user),
     )
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
     # success
     resp = client.delete(
         f"/api/v1/category/{category.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_204_NO_CONTENT
     async with db_manager.session() as session:

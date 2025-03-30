@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends
+from fastapi.params import Query
 from jwt import InvalidTokenError
 
 from auth.scheme import oauth2_scheme
@@ -41,3 +42,10 @@ async def get_current_user(
     if not user:
         raise UnauthorizedError("User not found")
     return user
+
+
+async def get_current_user_from_query(
+    token: Annotated[str, Query()],
+    user_service: Annotated[BaseUserService, Depends(UserService)],
+) -> UserSchema:
+    return await get_current_user(token, user_service)

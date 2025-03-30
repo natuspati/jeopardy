@@ -1,5 +1,3 @@
-from typing import Callable
-
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -14,7 +12,7 @@ def test_create_prompt(
     client: TestClient,
     users: list[UserModel],
     categories: list[CategoryModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
 ):
     user, wrong_user = users[0], users[1]
 
@@ -33,7 +31,7 @@ def test_create_prompt(
     resp = client.post(
         f"/api/v1/category/{category.id}/prompt",
         json=new_prompt,
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_201_CREATED
     created_prompt = resp.json()
@@ -45,7 +43,7 @@ def test_create_prompt(
     resp = client.post(
         f"/api/v1/category/{category.id}/prompt",
         json=new_prompt,
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_409_CONFLICT
 
@@ -54,7 +52,7 @@ def test_create_prompt(
     resp = client.post(
         f"/api/v1/category/{non_existing_category_id}/prompt",
         json=new_prompt,
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_404_NOT_FOUND
 
@@ -62,7 +60,7 @@ def test_create_prompt(
     resp = client.post(
         f"/api/v1/category/{category.id}/prompt",
         json=new_prompt,
-        headers=token_generator(wrong_user),
+        headers=auth_header(wrong_user),
     )
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
@@ -72,7 +70,7 @@ def test_update_prompt(
     users: list[UserModel],
     categories: list[CategoryModel],
     prompts: list[PromptModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
 ):
     user, wrong_user = users[0], users[1]
     category = next((cat for cat in categories if cat.owner_id == user.id), None)
@@ -91,7 +89,7 @@ def test_update_prompt(
     resp = client.patch(
         f"/api/v1/category/{category.id}/prompt/{prompt.id}",
         json=new_prompt,
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_200_OK
     fetched_prompt: dict = resp.json()
@@ -104,7 +102,7 @@ def test_update_prompt(
     # empty data
     resp = client.patch(
         f"/api/v1/category/{category.id}/prompt/{prompt.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -112,7 +110,7 @@ def test_update_prompt(
     resp = client.patch(
         f"/api/v1/category/{category.id}/prompt/{prompt.id}",
         json=new_prompt,
-        headers=token_generator(wrong_user),
+        headers=auth_header(wrong_user),
     )
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
@@ -128,7 +126,7 @@ def test_update_prompt(
     resp = client.patch(
         f"/api/v1/category/{wrong_category.id}/prompt/{prompt.id}",
         json=new_prompt,
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_404_NOT_FOUND
 
@@ -138,7 +136,7 @@ async def test_delete_prompt(
     users: list[UserModel],
     categories: list[CategoryModel],
     prompts: list[PromptModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
     db_manager: DBManager,
 ):
     user, wrong_user = users[0], users[1]
@@ -152,14 +150,14 @@ async def test_delete_prompt(
         # wrong user trying to delete prompt
         resp = client.delete(
             f"/api/v1/category/{category.id}/prompt/{prompt.id}",
-            headers=token_generator(wrong_user),
+            headers=auth_header(wrong_user),
         )
         assert resp.status_code == status.HTTP_403_FORBIDDEN
 
     # success
     resp = client.delete(
         f"/api/v1/category/{category.id}/prompt/{prompt.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_204_NO_CONTENT
     async with db_manager.session() as session:
@@ -170,12 +168,12 @@ async def test_delete_prompt(
     non_existent_prompt_id = max((p.id for p in prompts)) + 1
     resp = client.delete(
         f"/api/v1/category/{category.id}/prompt/{non_existent_prompt_id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_204_NO_CONTENT
     # wrong category
     resp = client.delete(
         f"/api/v1/category/{category.id + 1}/prompt/{prompt.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_204_NO_CONTENT

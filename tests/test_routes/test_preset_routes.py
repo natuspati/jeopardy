@@ -1,5 +1,3 @@
-from typing import Callable
-
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -18,7 +16,7 @@ def test_get_presets(
     pagination: dict[str, int],
     user: UserModel,
     presets: list[PresetModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
 ):
     selected_presets = [p for p in presets if p.owner_id == user.id]
     if not user:
@@ -29,7 +27,7 @@ def test_get_presets(
             "offset": pagination["offset"],
             "limit": pagination["limit"],
         },
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_200_OK
     fetched_presets = resp.json()["items"]
@@ -48,7 +46,7 @@ def test_get_preset(
     users: list[UserModel],
     prompts: list[PromptModel],
     presets: list[PresetModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
 ):
     user, wrong_user = users[0], users[1]
     preset = next((p for p in presets if p.owner_id == user.id), None)
@@ -58,7 +56,7 @@ def test_get_preset(
     # success
     resp = client.get(
         f"/api/v1/preset/{preset.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_200_OK
     fetched_preset = resp.json()
@@ -79,7 +77,7 @@ def test_get_preset(
     # user does not own preset
     resp = client.get(
         f"/api/v1/preset/{preset.id}",
-        headers=token_generator(wrong_user),
+        headers=auth_header(wrong_user),
     )
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
@@ -87,7 +85,7 @@ def test_get_preset(
     non_existent_preset_id = max((p.id for p in presets)) + 1
     resp = client.get(
         f"/api/v1/preset/{non_existent_preset_id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_404_NOT_FOUND
 
@@ -95,7 +93,7 @@ def test_get_preset(
 async def test_create_preset(
     client: TestClient,
     user: UserModel,
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
     db_manager: DBManager,
 ):
     # success with provided name
@@ -103,7 +101,7 @@ async def test_create_preset(
     resp = client.post(
         "/api/v1/preset",
         json={"name": new_preset},
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_201_CREATED
     async with db_manager.session() as session:
@@ -115,7 +113,7 @@ async def test_create_preset(
     # success without provided name
     resp = client.post(
         "/api/v1/preset",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_201_CREATED
     async with db_manager.session() as session:
@@ -128,7 +126,7 @@ def test_update_preset(
     client: TestClient,
     users: list[UserModel],
     presets: list[PresetModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
 ):
     user, wrong_user = users[0], users[1]
     preset = next((p for p in presets if p.owner_id == user.id), None)
@@ -141,7 +139,7 @@ def test_update_preset(
     resp = client.patch(
         f"/api/v1/preset/{preset.id}",
         json={"name": new_preset, "categories": list(new_categories)},
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_200_OK
     fetched_preset: dict = resp.json()
@@ -152,7 +150,7 @@ def test_update_preset(
     resp = client.patch(
         f"/api/v1/preset/{preset.id}",
         json={"name": new_preset, "categories": list(new_categories)},
-        headers=token_generator(wrong_user),
+        headers=auth_header(wrong_user),
     )
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
@@ -161,7 +159,7 @@ def test_update_preset(
     resp = client.patch(
         f"/api/v1/preset/{non_existent_preset_id}",
         json={"name": new_preset, "categories": list(new_categories)},
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_404_NOT_FOUND
 
@@ -169,12 +167,12 @@ def test_update_preset(
     resp = client.patch(
         f"/api/v1/preset/{preset.id}",
         json={"categories": 1},
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     resp = client.patch(
         f"/api/v1/preset/{preset.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -183,7 +181,7 @@ async def test_delete_preset(
     client: TestClient,
     users: list[UserModel],
     presets: list[PresetModel],
-    token_generator: Callable[[UserModel], dict[str, str]],
+    auth_header,
     db_manager: DBManager,
 ):
     user, wrong_user = users[0], users[1]
@@ -194,7 +192,7 @@ async def test_delete_preset(
     # user does not own preset
     resp = client.delete(
         f"/api/v1/preset/{preset.id}",
-        headers=token_generator(wrong_user),
+        headers=auth_header(wrong_user),
     )
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
@@ -202,14 +200,14 @@ async def test_delete_preset(
     non_existent_preset_id = max((p.id for p in presets)) + 1
     resp = client.delete(
         f"/api/v1/preset/{non_existent_preset_id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_204_NO_CONTENT
 
     # success
     resp = client.delete(
         f"/api/v1/preset/{preset.id}",
-        headers=token_generator(user),
+        headers=auth_header(user),
     )
     assert resp.status_code == status.HTTP_204_NO_CONTENT
     async with db_manager.session() as session:

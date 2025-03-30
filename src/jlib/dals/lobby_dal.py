@@ -5,7 +5,7 @@ from jlib.schemas.lobby import LobbyCreateSchema, LobbySchema, LobbyUpdateSchema
 
 class BaseLobbyDAL(ABC):
     @abstractmethod
-    async def select_by_id(self, lobby_id: int) -> LobbySchema | None:
+    async def select_by_id(self, lobby_id: str) -> LobbySchema | None:
         pass
 
     @abstractmethod
@@ -13,9 +13,9 @@ class BaseLobbyDAL(ABC):
         pass
 
     @abstractmethod
-    async def create(self, lobby_create: LobbyCreateSchema):
+    async def create(self, lobby_create: LobbyCreateSchema) -> LobbySchema:
         pass
 
     @abstractmethod
-    async def update(self, lobby_update: LobbyUpdateSchema):
+    async def update(self, lobby_update: LobbyUpdateSchema) -> LobbySchema:
         pass

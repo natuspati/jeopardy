@@ -14,8 +14,7 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from jlib.db import DBManager
-from jlib.db.utilities import get_db_manager
+from jlib.db import DBManager, get_db_manager
 from jlib.errors.database import DatabaseDetailError
 
 _logger = logging.getLogger(__name__)

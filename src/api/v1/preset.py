@@ -18,7 +18,7 @@ from jlib.services import BasePresetService
 from jlib.utils.response import generate_responses
 from services import PresetService
 
-router = APIRouter(prefix="/preset", tags=["preset"])
+router = APIRouter(prefix="/preset", tags=["question"])
 
 
 @router.get(

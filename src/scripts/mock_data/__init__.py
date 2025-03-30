@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from jlib.dals import RelationalDAL
-from jlib.db.utilities import get_db_manager
+from jlib.db import get_db_manager
 from models import import_models
 from scripts.mock_data.categories import create_categories, remove_categories
 from scripts.mock_data.presets import create_presets, remove_presets

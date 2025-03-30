@@ -13,7 +13,7 @@ class LobbyDAL(BaseLobbyDAL):
         self._redis = redis_manager
         self._redis.add_namespace("lobby")
 
-    async def select_by_id(self, lobby_id: int) -> LobbySchema | None:
+    async def select_by_id(self, lobby_id: str) -> LobbySchema | None:
         lobby = await self._redis.get(lobby_id=lobby_id)
         if lobby is not None:
             return validate_json(lobby, LobbySchema)
@@ -25,13 +25,19 @@ class LobbyDAL(BaseLobbyDAL):
     async def create(self, lobby_create: LobbyCreateSchema) -> LobbySchema:
         await self._redis.set(
             value=lobby_create.model_dump_json(),
-            lobby_id=lobby_create.lobby_id,
+            lobby_id=str(lobby_create.id),
         )
-        return await self.select_by_id(lobby_create.lobby_id)
+        return await self.select_by_id(str(lobby_create.id))
 
     async def update(self, lobby_update: LobbyUpdateSchema) -> LobbySchema:
+        existing_lobby = await self.select_by_id(lobby_update.lobby_id)
+        if lobby_update.state is not None:
+            existing_lobby.state = lobby_update.state
+        if lobby_update.players is not None:
+            existing_lobby.players = lobby_update.players
+
         await self._redis.set(
-            value=lobby_update.model_dump_json(),
+            value=existing_lobby.model_dump_json(),
             lobby_id=lobby_update.lobby_id,
         )
-        return await self.select_by_id(lobby_update.lobby_id)
+        return existing_lobby

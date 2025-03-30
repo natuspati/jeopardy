@@ -11,6 +11,5 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
-
 app.include_router(api.router)
 add_error_handlers(app)

@@ -1,4 +1,8 @@
+import uuid
+
 import pytest
+
+from jlib.enums import LobbyMemberTypeEnum, LobbyStateEnum
 
 
 @pytest.fixture
@@ -120,10 +124,6 @@ def presets_data() -> list[dict]:
             "category_id": 2,
         },
         {
-            "preset_id": 1,
-            "category_id": 3,
-        },
-        {
             "preset_id": 2,
             "category_id": 1,
         },
@@ -131,8 +131,33 @@ def presets_data() -> list[dict]:
             "preset_id": 2,
             "category_id": 2,
         },
-        {
-            "preset_id": 2,
-            "category_id": 3,
-        },
     ]
+
+
+@pytest.fixture
+def lobby_data() -> dict:
+    lobby_id = uuid.uuid4()
+    return {
+        "id": lobby_id,
+        "state": LobbyStateEnum.CREATE,
+        "players": [
+            {
+                "username": "user_1",
+                "lobby_id": lobby_id,
+                "score": None,
+                "type": LobbyMemberTypeEnum.LEAD,
+            },
+            {
+                "username": "user_2",
+                "lobby_id": lobby_id,
+                "score": None,
+                "type": LobbyMemberTypeEnum.PLAYER,
+            },
+            {
+                "username": "user_3",
+                "lobby_id": lobby_id,
+                "score": None,
+                "type": LobbyMemberTypeEnum.PLAYER,
+            },
+        ],
+    }

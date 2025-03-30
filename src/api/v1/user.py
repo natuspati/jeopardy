@@ -44,11 +44,11 @@ async def get_user_details(
     return current_user
 
 
-@router.post("/token", status_code=status.HTTP_201_CREATED)
+@router.post("/token", response_model=TokenSchema, status_code=status.HTTP_201_CREATED)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_service: Annotated[BaseUserService, Depends(UserService)],
-) -> TokenSchema:
+):
     """
     Get user token.
     """

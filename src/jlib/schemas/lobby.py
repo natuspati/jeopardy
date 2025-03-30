@@ -6,7 +6,9 @@ from pydantic import AfterValidator, Field
 from jlib.enums import LobbyMemberTypeEnum, LobbyStateEnum
 from jlib.schemas.base import BaseSchema
 from jlib.schemas.category import CategoryInGameSchema
+from jlib.schemas.pagination import PaginatedResponseSchema
 from jlib.schemas.player import PlayerSchema
+from jlib.schemas.user import UserSchema
 
 
 def _check_players(players: list[PlayerSchema]) -> list[PlayerSchema]:
@@ -47,16 +49,49 @@ class LobbySchema(BaseSchema):
     players: list[PlayerSchema]
     categories: list[CategoryInGameSchema]
 
+    def __contains__(self, user_id: int) -> bool:
+        return any(player.user_id == user_id for player in self.players)
+
+    def __getitem__(self, user_id: int) -> PlayerSchema:
+        for player in self.players:
+            if player.user_id == user_id:
+                return player
+        raise KeyError(f"Player with user id {user_id} not found")
+
+
+class BasicLobbySchema(BaseSchema):
+    id: uuid.UUID
+    state: LobbyStateEnum
+    num_players: int
+
+
+class LobbyCreateShowSchema(BaseSchema):
+    preset_id: int
+
+
+class LobbyCreateFromPresetSchema(LobbyCreateShowSchema):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    state: LobbyStateEnum = LobbyStateEnum.CREATE
+    user: UserSchema
+    preset_id: int
+
 
 class LobbyCreateSchema(BaseSchema):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    state: LobbyStateEnum = LobbyStateEnum.CREATED
+    state: LobbyStateEnum = LobbyStateEnum.CREATE
     players: Annotated[list[PlayerSchema], AfterValidator(_check_players)]
     categories: Annotated[list[CategoryInGameSchema], AfterValidator(_check_categories)]
 
 
 class LobbyUpdateSchema(BaseSchema):
     id: uuid.UUID
-    state: LobbyStateEnum
-    players: list[PlayerSchema]
-    categories: list[CategoryInGameSchema]
+    state: LobbyStateEnum | None = None
+    players: list[PlayerSchema] | None = None
+
+
+class LobbyJoinSchema(BasicLobbySchema):
+    join_url: str
+
+
+class PaginatedBasicLobbySchema(PaginatedResponseSchema[BasicLobbySchema]):
+    pass

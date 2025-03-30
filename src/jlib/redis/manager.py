@@ -69,7 +69,7 @@ class RedisManager:
         await self._client.delete(self._create_name(**filters))
 
     def _create_name(self, **filters: str | int) -> str:
-        name = f"{self._ns}:"
+        name = f"{self._ns}"
         for key, value in filters.items():
             name += f"{key}={value},"
         return name.rstrip(",")
