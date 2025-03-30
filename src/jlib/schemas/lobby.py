@@ -52,11 +52,15 @@ class LobbySchema(BaseSchema):
     def __contains__(self, user_id: int) -> bool:
         return any(player.user_id == user_id for player in self.players)
 
-    def __getitem__(self, user_id: int) -> PlayerSchema:
+    def __getitem__(self, user_id: int) -> PlayerSchema | None:
         for player in self.players:
             if player.user_id == user_id:
                 return player
-        raise KeyError(f"Player with user id {user_id} not found")
+
+    def pop_player(self, user_id: int) -> PlayerSchema | None:
+        for i, player in enumerate(self.players):
+            if player.user_id == user_id:
+                return self.players.pop(i)
 
 
 class BasicLobbySchema(BaseSchema):

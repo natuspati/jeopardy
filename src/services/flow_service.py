@@ -40,8 +40,13 @@ class GameFlowService(BaseGameFlowService):
             raise GameFlowError(f"Lobby {self.lobby_id} is not set")
         return self._lobby
 
+    @lobby.setter
+    def lobby(self, lobby: LobbySchema) -> None:
+        self._lobby = lobby
+
     async def play(self, new_player: PlayerSchema, connection: WebSocket) -> None:
         self._player = new_player
+        self.lobby = await self._get_lobby()
         await self._handle_join(connection)
         try:
             await self._listen()
@@ -80,17 +85,15 @@ class GameFlowService(BaseGameFlowService):
         )
 
     async def _handle_disconnect(self) -> None:
-        new_players = [
-            p for p in self.lobby.players if p.user_id != self.player.user_id
-        ]
-        await self._lobby_dal.update(self._get_update_players(new_players))
+        self.lobby.pop_player(self.player.user_id)
+        await self._update_lobby(players=self.lobby.players)
         await self._ws.remove_connection(
             member_id=self.player.user_id,
             room_id=self.lobby_id,
         )
 
     async def _handle_start(self) -> None:
-        await self._lobby_dal.update(self._get_update_state(LobbyStateEnum.START))
+        await self._update_lobby(state=LobbyStateEnum.START)
         await self._send()
 
     async def _send(
@@ -100,21 +103,25 @@ class GameFlowService(BaseGameFlowService):
         message: dict[str, Any] | None = None,
         include_lobby: bool = True,
     ) -> None:
-        lobby = await self._get_lobby()
         if message is None:
             message = {}
         if event is None:
-            event = lobby.state
+            event = self.lobby.state
         message["event"] = event.value
         if include_lobby:
-            message.setdefault("lobby", lobby.model_dump(mode="json"))
+            message.setdefault("lobby", self.lobby.model_dump(mode="json"))
         await self._ws.send_json(*player_ids, room_id=self.lobby_id, data=message)
 
     async def _get_lobby(self) -> LobbySchema:
         return await self._lobby_dal.select_by_id(self.lobby_id)
 
-    def _get_update_state(self, state: LobbyStateEnum) -> LobbyUpdateSchema:
-        return LobbyUpdateSchema(id=self.lobby_id, state=state)
-
-    def _get_update_players(self, players: list[PlayerSchema]) -> LobbyUpdateSchema:
-        return LobbyUpdateSchema(id=self.lobby_id, players=players)
+    async def _update_lobby(
+        self,
+        *,
+        state: LobbyStateEnum | None = None,
+        players: list[PlayerSchema | None] = None,
+    ) -> None:
+        await self._lobby_dal.update(
+            LobbyUpdateSchema(id=self.lobby_id, state=state, players=players),
+        )
+        self.lobby = await self._get_lobby()
