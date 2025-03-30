@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated, Any
 
 from fastapi import Depends, WebSocket, WebSocketDisconnect
@@ -22,6 +23,7 @@ class GameFlowService(BaseGameFlowService):
         self._ws = ws_manager
         self._lobby_dal = lobby_dal
         self._player: PlayerSchema | None = None
+        self._lobby_id: str | None = None
         self._lobby: LobbySchema | None = None
 
     @property
@@ -30,9 +32,17 @@ class GameFlowService(BaseGameFlowService):
             raise GameFlowError(f"Player {self.player.username} is not set")
         return self._player
 
+    @player.setter
+    def player(self, player: PlayerSchema):
+        self._player = player
+
     @property
     def lobby_id(self) -> str:
-        return str(self.player.lobby_id)
+        return self._lobby_id
+
+    @lobby_id.setter
+    def lobby_id(self, lobby_id: str | uuid.UUID) -> None:
+        self._lobby_id = str(lobby_id)
 
     @property
     def lobby(self) -> LobbySchema:
@@ -45,7 +55,8 @@ class GameFlowService(BaseGameFlowService):
         self._lobby = lobby
 
     async def play(self, new_player: PlayerSchema, connection: WebSocket) -> None:
-        self._player = new_player
+        self.player = new_player
+        self.lobby_id = new_player.lobby_id
         self.lobby = await self._get_lobby()
         await self._handle_join(connection)
         try:
@@ -67,6 +78,7 @@ class GameFlowService(BaseGameFlowService):
             await self._handle_action(action, **message)
 
     async def _handle_action(self, action: str, **message: Any) -> None:
+        await self._update_lobby()
         match action:
             case "start":
                 await self._handle_start()
@@ -121,7 +133,8 @@ class GameFlowService(BaseGameFlowService):
         state: LobbyStateEnum | None = None,
         players: list[PlayerSchema | None] = None,
     ) -> None:
-        await self._lobby_dal.update(
-            LobbyUpdateSchema(id=self.lobby_id, state=state, players=players),
-        )
+        if state or players:
+            await self._lobby_dal.update(
+                LobbyUpdateSchema(id=self.lobby_id, state=state, players=players),
+            )
         self.lobby = await self._get_lobby()
