@@ -1,5 +1,5 @@
 import json
-from typing import Callable
+from collections.abc import Callable
 
 import pytest
 from fastapi import status
@@ -55,7 +55,7 @@ async def test_create_lobby(
     assert lobby_id in created_lobby.get("join_url")
 
     stored_lobby = await redis_client.get(
-        f"{settings.redis_namespace}lobby_lobby_id={lobby_id}"
+        f"{settings.redis_namespace}lobby_lobby_id={lobby_id}",
     )
     stored_lobby = json.loads(stored_lobby)
     assert created_lobby["num_players"] == len(stored_lobby["players"])
@@ -69,11 +69,12 @@ async def test_join_lobby(
     lobby: LobbySchema,
 ):
     player = next(
-        (p for p in lobby.players if p.type == LobbyMemberTypeEnum.PLAYER), None
+        (p for p in lobby.players if p.type == LobbyMemberTypeEnum.PLAYER),
+        None,
     )
     if not player:
         pytest.fail("No player in lobby")
-    user = next((u for u in users if u.id == player.user_id))
+    user = next(u for u in users if u.id == player.user_id)
 
     with client.websocket_connect(
         f"/api/v1/lobby/{player.lobby_id}/join",

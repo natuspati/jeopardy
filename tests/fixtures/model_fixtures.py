@@ -74,8 +74,8 @@ async def presets(
         await session.execute(insert(PresetCategoryModel).values(presets_data))
         res = await session.scalars(
             select(PresetModel).options(
-                selectinload(PresetModel.categories).selectinload(CategoryModel.prompts)
-            )
+                selectinload(PresetModel.categories).selectinload(CategoryModel.prompts),
+            ),
         )
     return res.all()
 
@@ -92,7 +92,7 @@ async def lobby(
         "id": lobby_data["id"],
         "state": lobby_data["state"],
         "players": [
-            {"user_id": next((u.id for u in users if u.username == p["username"])), **p}
+            {"user_id": next(u.id for u in users if u.username == p["username"]), **p}
             for p in lobby_data["players"]
         ],
         "categories": preset.model_dump()["categories"],

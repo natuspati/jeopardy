@@ -58,7 +58,7 @@ class PresetService(BasePresetService):
         preset = await self._preset_dal.select_by_id(preset_update.id)
         if not preset:
             raise ResourceNotFoundError(
-                f"Preset with id {preset_update.id} does not exist"
+                f"Preset with id {preset_update.id} does not exist",
             )
         if preset.owner_id != preset_update.owner_id:
             raise ForbiddenError(f"User does not own the preset {preset_update.id}")

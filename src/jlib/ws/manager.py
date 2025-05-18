@@ -1,4 +1,4 @@
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from fastapi import WebSocket
 
@@ -6,8 +6,8 @@ from jlib.errors.resource import ResourceNotFoundError
 
 
 class WSManager:
-    def __init__(self):
-        self._rooms: dict[str | int, dict[str | int, WebSocket]] = {}
+    def __init__(self, rooms: dict | None = None):
+        self._rooms: dict[str | int, dict[str | int, WebSocket]] = rooms or {}
 
     async def add_connection(
         self,
@@ -54,16 +54,16 @@ class WSManager:
     def _get_room(self, room_id: str | int) -> dict[str | int, WebSocket]:
         try:
             room = self._rooms[room_id]
-        except KeyError:
-            raise ResourceNotFoundError(f"No connections found for room {room_id}")
+        except KeyError as error:
+            raise ResourceNotFoundError(f"No connections found for room {room_id}") from error
         return room
 
     def _get_connection(self, member_id: str | int, room_id: str | int) -> WebSocket:
         room = self._get_room(room_id)
         try:
             return room[member_id]
-        except KeyError:
-            raise ResourceNotFoundError(f"No connection found for member {member_id}")
+        except KeyError as error:
+            raise ResourceNotFoundError(f"No connection found for member {member_id}") from error
 
     def _get_connections(
         self,

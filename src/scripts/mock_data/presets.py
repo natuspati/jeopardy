@@ -71,9 +71,7 @@ async def _check_required_entities_exist(dal: RelationalDAL) -> None:
         if not owner:
             raise MissingRequiredDataInDBError(f"Owner {owner_id} not found.")
     category_ids = {
-        category["category_id"]
-        for preset in PRESETS
-        for category in preset["categories"]
+        category["category_id"] for preset in PRESETS for category in preset["categories"]
     }
     stmt = select(CategoryModel).where(CategoryModel.id == bindparam("id"))
     for category_id in category_ids:

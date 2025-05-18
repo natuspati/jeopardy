@@ -62,6 +62,11 @@ class LobbySchema(BaseSchema):
             if player.user_id == user_id:
                 return self.players.pop(i)
 
+    def get_lead(self) -> PlayerSchema | None:
+        for player in self.players:
+            if player.type == LobbyMemberTypeEnum.LEAD:
+                return player
+
 
 class BasicLobbySchema(BaseSchema):
     id: uuid.UUID

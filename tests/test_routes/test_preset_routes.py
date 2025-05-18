@@ -34,7 +34,8 @@ def test_get_presets(
     assert len(fetched_presets) == len(selected_presets)
     for fetched_preset in fetched_presets:
         selected_preset = next(
-            (p for p in selected_presets if p.id == fetched_preset.pop("id")), None
+            (p for p in selected_presets if p.id == fetched_preset.pop("id")),
+            None,
         )
         assert selected_preset
         for field, value in fetched_preset.items():
@@ -63,10 +64,9 @@ def test_get_preset(
     fetched_categories = fetched_preset.pop("categories")
     for field, value in fetched_preset.items():
         assert value == getattr(preset, field)
-    preset_category_ids = set(cat.id for cat in preset.categories)
+    preset_category_ids = {cat.id for cat in preset.categories}
     category_prompts = {
-        cat_id: {p.id for p in prompts if p.category_id == cat_id}
-        for cat_id in preset_category_ids
+        cat_id: {p.id for p in prompts if p.category_id == cat_id} for cat_id in preset_category_ids
     }
     for category in fetched_categories:
         cat_id = category.pop("id")
@@ -82,7 +82,7 @@ def test_get_preset(
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
     # preset does not exist
-    non_existent_preset_id = max((p.id for p in presets)) + 1
+    non_existent_preset_id = max(p.id for p in presets) + 1
     resp = client.get(
         f"/api/v1/preset/{non_existent_preset_id}",
         headers=auth_header(user),
@@ -155,7 +155,7 @@ def test_update_preset(
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
     # wrong preset
-    non_existent_preset_id = max((p.id for p in presets)) + 1
+    non_existent_preset_id = max(p.id for p in presets) + 1
     resp = client.patch(
         f"/api/v1/preset/{non_existent_preset_id}",
         json={"name": new_preset, "categories": list(new_categories)},
@@ -197,7 +197,7 @@ async def test_delete_preset(
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
     # preset does not exist
-    non_existent_preset_id = max((p.id for p in presets)) + 1
+    non_existent_preset_id = max(p.id for p in presets) + 1
     resp = client.delete(
         f"/api/v1/preset/{non_existent_preset_id}",
         headers=auth_header(user),
@@ -217,7 +217,7 @@ async def test_delete_preset(
 
         preset_categories = await session.scalars(
             select(PresetCategoryModel).where(
-                PresetCategoryModel.preset_id == preset.id
-            )
+                PresetCategoryModel.preset_id == preset.id,
+            ),
         )
         assert not preset_categories.all()

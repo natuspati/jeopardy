@@ -6,7 +6,7 @@ from fastapi import Depends, WebSocket, WebSocketDisconnect
 from dals import LobbyDAL
 from jlib.dals import BaseLobbyDAL
 from jlib.enums import LobbyStateEnum
-from jlib.enums.game import LobbyEventEnum
+from jlib.enums.game import LobbyEventEnum, LobbyMemberTypeEnum
 from jlib.errors.game_flow import GameFlowError, WrongActionError
 from jlib.schemas.lobby import LobbySchema, LobbyUpdateSchema
 from jlib.schemas.player import PlayerSchema
@@ -20,7 +20,7 @@ class GameFlowService(BaseGameFlowService):
         ws_manager: Annotated[WSManager, Depends(get_ws_manager)],
         lobby_dal: Annotated[BaseLobbyDAL, Depends(LobbyDAL)],
     ):
-        self._ws = ws_manager
+        self._ws: Any = ws_manager
         self._lobby_dal = lobby_dal
         self._player: PlayerSchema | None = None
         self._lobby_id: str | None = None
@@ -70,7 +70,10 @@ class GameFlowService(BaseGameFlowService):
             room_id=self.lobby_id,
         )
         async for message in receiver:
-            await self._handle_message(message)
+            try:
+                await self._handle_message(message)
+            except GameFlowError as error:
+                await self._handle_game_error(error)
 
     async def _handle_message(self, message: dict[str, Any]) -> None:
         action = message.pop("action")
@@ -105,8 +108,22 @@ class GameFlowService(BaseGameFlowService):
         )
 
     async def _handle_start(self) -> None:
+        if self.player.type != LobbyMemberTypeEnum.LEAD:
+            raise GameFlowError(f"Player {self.player.username} is not a lead")
+
+        if self.lobby.state != LobbyStateEnum.CREATE:
+            raise GameFlowError("Lobby has already started")
+
         await self._update_lobby(state=LobbyStateEnum.START)
         await self._send()
+
+    async def _handle_game_error(self, error: GameFlowError) -> None:
+        await self._send(
+            self.player.user_id,
+            event=LobbyEventEnum.ERROR,
+            message={"error": error.detail},
+            include_lobby=False,
+        )
 
     async def _send(
         self,
@@ -131,7 +148,7 @@ class GameFlowService(BaseGameFlowService):
         self,
         *,
         state: LobbyStateEnum | None = None,
-        players: list[PlayerSchema | None] = None,
+        players: list[PlayerSchema] | None = None,
     ) -> None:
         if state or players:
             await self._lobby_dal.update(

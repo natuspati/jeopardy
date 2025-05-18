@@ -79,9 +79,7 @@ async def create_preset(
     """
     Create preset.
     """
-    preset_data = {"owner_id": user.id} | (
-        preset_create.model_dump() if preset_create else {}
-    )
+    preset_data = {"owner_id": user.id} | (preset_create.model_dump() if preset_create else {})
     return await preset_service.create_preset(
         preset=PresetCreateSchema.model_validate(preset_data),
     )

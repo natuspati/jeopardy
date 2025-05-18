@@ -84,11 +84,13 @@ class PromptCreateShowSchema(BaseSchema):
 class PromptCreateSchema(BaseSchema):
     question: str
     question_type: Annotated[
-        QuestionTypeEnum, BeforeValidator(_convert_str_to_question_type)
+        QuestionTypeEnum,
+        BeforeValidator(_convert_str_to_question_type),
     ]
     answer: str
     answer_type: Annotated[
-        QuestionTypeEnum, BeforeValidator(_convert_str_to_answer_type)
+        QuestionTypeEnum,
+        BeforeValidator(_convert_str_to_answer_type),
     ]
     default_priority: int
     category_id: int
@@ -98,7 +100,8 @@ class PromptShowSchema(BaseSchema):
     id: int
     question: str
     question_type: Annotated[
-        QuestionShowType, BeforeValidator(_convert_question_type_to_str)
+        QuestionShowType,
+        BeforeValidator(_convert_question_type_to_str),
     ]
     answer: str
     answer_type: Annotated[AnswerShowType, BeforeValidator(_convert_answer_type_to_str)]
@@ -123,11 +126,13 @@ class PromptUpdateSchema(BaseSchema):
     category_id: int
     question: str | None = None
     question_type: Annotated[
-        QuestionTypeEnum | None, BeforeValidator(_convert_str_to_question_type)
+        QuestionTypeEnum | None,
+        BeforeValidator(_convert_str_to_question_type),
     ] = None
     answer: str | None = None
     answer_type: Annotated[
-        QuestionTypeEnum | None, BeforeValidator(_convert_str_to_answer_type)
+        QuestionTypeEnum | None,
+        BeforeValidator(_convert_str_to_answer_type),
     ] = None
 
 

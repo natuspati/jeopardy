@@ -1,6 +1,7 @@
 import contextlib
 import logging
-from typing import Annotated, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Annotated
 
 from fastapi import Depends
 from sqlalchemy import Executable
@@ -91,10 +92,6 @@ class RelationalDAL:
     @classmethod
     def _handle_error(cls, error: Exception, statement: str) -> None:
         _logger.error(
-            "Database error, statement: {0},\ntype: {1},\nmessage: {2}".format(
-                statement,
-                type(error),
-                error,
-            ),
+            f"Database error, statement: {statement},\ntype: {type(error)},\nmessage: {error}",
         )
         raise DatabaseDetailError(error)

@@ -47,7 +47,7 @@ class PromptDAL(BasePromptDAL, RelationalDAL):
             self.execute(
                 update(PromptModel)
                 .where(PromptModel.id == priority.id)
-                .values(default_priority=temp_offset + priority.default_priority)
+                .values(default_priority=temp_offset + priority.default_priority),
             )
             for priority in priority_updates
         ]
@@ -57,7 +57,7 @@ class PromptDAL(BasePromptDAL, RelationalDAL):
             self.execute(
                 update(PromptModel)
                 .where(PromptModel.id == priority.id)
-                .values(default_priority=priority.default_priority)
+                .values(default_priority=priority.default_priority),
             )
             for priority in priority_updates
         ]
@@ -72,7 +72,7 @@ class PromptDAL(BasePromptDAL, RelationalDAL):
                     mode="json",
                     exclude_none=True,
                     exclude={"id", "category_id"},
-                )
+                ),
             )
         )
         await self.execute(stmt)

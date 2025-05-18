@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -21,7 +21,7 @@ class Base(DeclarativeBase):
     """Base for all models."""
 
     metadata = meta
-    type_annotation_map = {
+    type_annotation_map: ClassVar[dict] = {
         int: Integer,
         datetime: TIMESTAMP(timezone=False),
         str: String().with_variant(NVARCHAR, "postgresql"),

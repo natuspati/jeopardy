@@ -23,10 +23,7 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
         limit: int,
     ) -> list[BasicPresetSchema]:
         stmt = (
-            select(PresetModel)
-            .where(PresetModel.owner_id == user_id)
-            .offset(offset)
-            .limit(limit)
+            select(PresetModel).where(PresetModel.owner_id == user_id).offset(offset).limit(limit)
         )
         presets = await self.scalars(stmt)
         return validate_model(presets, BasicPresetSchema)
@@ -35,7 +32,7 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
         stmt = (
             select(PresetModel)
             .options(
-                selectinload(PresetModel.categories).selectinload(CategoryModel.prompts)
+                selectinload(PresetModel.categories).selectinload(CategoryModel.prompts),
             )
             .where(PresetModel.id == preset_id)
         )
@@ -68,11 +65,7 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
         session: AsyncSession,
         preset: PresetUpdateSchema,
     ) -> None:
-        stmt = (
-            update(PresetModel)
-            .where(PresetModel.id == preset.id)
-            .values(name=preset.name)
-        )
+        stmt = update(PresetModel).where(PresetModel.id == preset.id).values(name=preset.name)
         await session.execute(stmt)
 
     @classmethod
@@ -82,7 +75,7 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
         preset: PresetUpdateSchema,
     ) -> None:
         existing_stmt = select(PresetCategoryModel.category_id).where(
-            PresetCategoryModel.preset_id == preset.id
+            PresetCategoryModel.preset_id == preset.id,
         )
         preset_category_ids = set(await session.scalars(existing_stmt))
         to_remove = preset_category_ids - set(preset.categories)
@@ -97,6 +90,6 @@ class PresetDAL(BasePresetDAL, RelationalDAL):
 
         if to_add:
             insert_stmt = insert(PresetCategoryModel).values(
-                [{"preset_id": preset.id, "category_id": cat_id} for cat_id in to_add]
+                [{"preset_id": preset.id, "category_id": cat_id} for cat_id in to_add],
             )
             await session.execute(insert_stmt)

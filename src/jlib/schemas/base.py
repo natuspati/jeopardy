@@ -11,7 +11,8 @@ class OneFieldSetSchemaMixin:
     @model_validator(mode="after")
     @classmethod
     def check_at_least_one_field_is_set(
-        cls, validated_schema: BaseSchema
+        cls,
+        validated_schema: BaseSchema,
     ) -> BaseSchema:
         """
         Check if schema has at least one field set.

@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import Depends
@@ -13,8 +14,8 @@ class LobbyDAL(BaseLobbyDAL):
         self._redis = redis_manager
         self._redis.add_namespace("lobby")
 
-    async def select_by_id(self, lobby_id: str) -> LobbySchema | None:
-        lobby = await self._redis.get(lobby_id=lobby_id)
+    async def select_by_id(self, lobby_id: str | uuid.UUID) -> LobbySchema | None:
+        lobby = await self._redis.get(lobby_id=str(lobby_id))
         if lobby is not None:
             return validate_json(lobby, LobbySchema)
 
@@ -30,7 +31,7 @@ class LobbyDAL(BaseLobbyDAL):
         return await self.select_by_id(str(lobby_create.id))
 
     async def update(self, lobby_update: LobbyUpdateSchema) -> LobbySchema:
-        existing_lobby = await self.select_by_id(lobby_update.lobby_id)
+        existing_lobby = await self.select_by_id(lobby_update.id)
         if lobby_update.state is not None:
             existing_lobby.state = lobby_update.state
         if lobby_update.players is not None:
@@ -38,6 +39,6 @@ class LobbyDAL(BaseLobbyDAL):
 
         await self._redis.set(
             value=existing_lobby.model_dump_json(),
-            lobby_id=lobby_update.lobby_id,
+            lobby_id=str(lobby_update.id),
         )
         return existing_lobby

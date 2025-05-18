@@ -69,12 +69,12 @@ class QuestionService(BaseQuestionService):
         category = await self.get_category_by_id(category_update.id)
         if not category:
             raise ResourceNotFoundError(
-                f"Category with id {category_update.id} does not exist"
+                f"Category with id {category_update.id} does not exist",
             )
         if category.owner_id != category_update.owner_id:
             raise ForbiddenError(f"User does not own the category {category.name}")
         if category_update.prompts and len(category_update.prompts) != len(
-            category.prompts
+            category.prompts,
         ):
             raise BadRequestError("Provided number of prompts does not match")
         if category_update.name:
@@ -104,17 +104,17 @@ class QuestionService(BaseQuestionService):
         category = await self.get_category_by_id(prompt_create.category_id)
         if not category:
             raise ResourceNotFoundError(
-                f"Category with id {prompt_create.category_id} does not exist"
+                f"Category with id {prompt_create.category_id} does not exist",
             )
         if category.owner_id != user_id:
             raise ForbiddenError(
-                f"User does not own the category {prompt_create.category_id}"
+                f"User does not own the category {prompt_create.category_id}",
             )
 
         existing_priorities = {prompt.default_priority for prompt in category.prompts}
         if prompt_create.default_priority in existing_priorities:
             raise ResourceExistsError(
-                f"Prompt with priority {prompt_create.default_priority} already exists"
+                f"Prompt with priority {prompt_create.default_priority} already exists",
             )
         created_prompt = await self._prompt_dal.create(prompt_create)
         return validate_model(created_prompt, PromptSchema)
@@ -129,7 +129,7 @@ class QuestionService(BaseQuestionService):
             raise ResourceNotFoundError(f"Prompt {prompt_update.id} does not exist")
         if prompt.category.owner_id != user_id:
             raise ForbiddenError(
-                f"User does not own the category {prompt.category.name}"
+                f"User does not own the category {prompt.category.name}",
             )
         await self._prompt_dal.update(prompt_update)
         return await self._prompt_dal.select_by_id(prompt_update.id)

@@ -77,7 +77,7 @@ async def create_category(
         CategoryCreateSchema(
             owner_id=current_user.id,
             **category.model_dump(),
-        )
+        ),
     )
 
 

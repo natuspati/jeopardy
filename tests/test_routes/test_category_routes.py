@@ -58,7 +58,8 @@ async def test_create_category(
 ):
     # success
     category_to_create = next(
-        (cat for cat in categories_data if cat["owner_id"] == user.id), None
+        (cat for cat in categories_data if cat["owner_id"] == user.id),
+        None,
     )
     if not category_to_create:
         pytest.fail("No category to create with provided user")
@@ -71,7 +72,7 @@ async def test_create_category(
     assert resp.status_code == status.HTTP_201_CREATED
     async with db_manager.session() as session:
         category_in_db = await session.scalar(
-            select(CategoryModel).where(CategoryModel.id == resp.json()["id"])
+            select(CategoryModel).where(CategoryModel.id == resp.json()["id"]),
         )
         assert category_in_db.owner_id == user_id
         assert category_in_db.name == category_to_create["name"]
@@ -113,7 +114,7 @@ async def test_update_category(
     assert resp.status_code == status.HTTP_200_OK
     async with db_manager.session() as session:
         category_in_db = await session.scalar(
-            select(CategoryModel).where(CategoryModel.id == category.id)
+            select(CategoryModel).where(CategoryModel.id == category.id),
         )
         assert category_in_db.name == new_name
 
@@ -193,6 +194,6 @@ async def test_delete_category(
     assert resp.status_code == status.HTTP_204_NO_CONTENT
     async with db_manager.session() as session:
         category_in_db = await session.scalar(
-            select(CategoryModel).where(CategoryModel.id == category.id)
+            select(CategoryModel).where(CategoryModel.id == category.id),
         )
         assert not category_in_db

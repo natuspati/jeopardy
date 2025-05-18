@@ -23,3 +23,4 @@ class LobbyStateEnum(BaseLobbyEnum):
 
 class LobbyEventEnum(BaseLobbyEnum):
     JOIN = "join"
+    ERROR = "error"

@@ -54,14 +54,47 @@ fail_under = 85
 [tool.coverage.run]
 omit = ["src/migrations/*", "src/manage.py", "src/scripts/*", "src/main.py", "tests/*"]
 
+[tool.ruff]
+line-length = 100
+
 [tool.ruff.format]
 quote-style = "double"
+skip-magic-trailing-comma = false
+indent-style = "space"
 
 [tool.ruff.lint]
-extend-select = ["I"]
+select = [
+    "F",   # Pyflakes (basic Python errors)
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "I",   # isort (import sorting)
+    "UP",  # pyupgrade (Python version upgrade)
+    "B",   # flake8-bugbear (common bugs)
+    "COM", # flake8-commas (trailing commas!)
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "RUF", # Ruff-specific rules
+    "PT",  # flake8-pytest-style
+]
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-branches = 12
+max-returns = 2
+max-statements = 50
+max-locals = 15
+max-public-methods = 20
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = true
+force-wrap-aliases = true
+combine-as-imports = false
+
 
 [tool.ruff.lint.per-file-ignores]
 # Ignore unused imports in all __init__.py files
 "**/__init__.py" = ["F401"]
 # Ignore undefined name in **/models for model declarations in SQLAlchemy relationships.
 "**/models/*" = ["F821"]
+# Ignore long lines for mock data.
+"src/scripts/mock_data/*.py" = ["E501"]

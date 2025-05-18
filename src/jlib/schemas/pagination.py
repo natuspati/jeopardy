@@ -1,4 +1,5 @@
-from typing import Generic, Sequence
+from collections.abc import Sequence
+from typing import Generic
 
 from jlib.schemas.base import BaseSchema
 from jlib.types.schemas import T

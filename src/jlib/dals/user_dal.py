@@ -22,7 +22,9 @@ class BaseUserDAL(ABC):
 
     @abstractmethod
     async def update_by_id(
-        self, user_id: int, user_update: UserUpdateSchema
+        self,
+        user_id: int,
+        user_update: UserUpdateSchema,
     ) -> UserSchema:
         pass
 

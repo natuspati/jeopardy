@@ -1,7 +1,7 @@
 import asyncio
 import os
+from collections.abc import Iterable
 from logging.config import fileConfig
-from typing import Iterable
 
 from alembic import context, util
 from alembic.operations import MigrationScript
@@ -28,9 +28,7 @@ def process_revision_directives(
     versions_dir = os.path.join(os.path.dirname(__file__), "versions")
 
     existing_revisions = [
-        f
-        for f in os.listdir(versions_dir)  # noqa: WPS111
-        if f.endswith(".py") and f.split("_")[0].isdigit()
+        f for f in os.listdir(versions_dir) if f.endswith(".py") and f.split("_")[0].isdigit()
     ]
 
     if existing_revisions:

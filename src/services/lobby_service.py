@@ -66,7 +66,7 @@ class LobbyService(BaseLobbyService):
         preset = await self._preset_dal.select_by_id(lobby_create.preset_id)
         if not preset:
             raise BadRequestError(
-                f"Preset with id {lobby_create.preset_id} does not exist"
+                f"Preset with id {lobby_create.preset_id} does not exist",
             )
         lobby_id = self._create_lobby_id()
         lobby = await self._lobby_dal.create(
@@ -80,11 +80,8 @@ class LobbyService(BaseLobbyService):
                         type=LobbyMemberTypeEnum.LEAD,
                     ),
                 ],
-                categories=[
-                    CategoryInGameSchema(**cat.model_dump())
-                    for cat in preset.categories
-                ],
-            )
+                categories=[CategoryInGameSchema(**cat.model_dump()) for cat in preset.categories],
+            ),
         )
         return LobbyJoinSchema(
             join_url=self._app.url_path_for("join_lobby", lobby_id=lobby_id),
@@ -122,7 +119,7 @@ class LobbyService(BaseLobbyService):
             LobbyUpdateSchema(
                 id=lobby.id,
                 players=lobby.players,
-            )
+            ),
         )
         return player
 

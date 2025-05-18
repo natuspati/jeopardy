@@ -48,7 +48,7 @@ def test_create_prompt(
     assert resp.status_code == status.HTTP_409_CONFLICT
 
     # category of the prompt does not exist
-    non_existing_category_id = max((cat.id for cat in categories)) + 1
+    non_existing_category_id = max(cat.id for cat in categories) + 1
     resp = client.post(
         f"/api/v1/category/{non_existing_category_id}/prompt",
         json=new_prompt,
@@ -116,11 +116,7 @@ def test_update_prompt(
 
     # wrong category id
     wrong_category = next(
-        (
-            cat
-            for cat in categories
-            if cat.owner_id == user.id and cat.id != category.id
-        ),
+        (cat for cat in categories if cat.owner_id == user.id and cat.id != category.id),
         None,
     )
     resp = client.patch(
@@ -165,7 +161,7 @@ async def test_delete_prompt(
         assert not deleted_prompt
 
     # non-existent prompt
-    non_existent_prompt_id = max((p.id for p in prompts)) + 1
+    non_existent_prompt_id = max(p.id for p in prompts) + 1
     resp = client.delete(
         f"/api/v1/category/{category.id}/prompt/{non_existent_prompt_id}",
         headers=auth_header(user),

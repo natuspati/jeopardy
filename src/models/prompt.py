@@ -8,7 +8,9 @@ class PromptModel(BaseDBModelID):
     __tablename__ = "prompt"
     __table_args__ = (
         UniqueConstraint(
-            "default_priority", "category_id", name="uq_prompt_priority_in_category"
+            "default_priority",
+            "category_id",
+            name="uq_prompt_priority_in_category",
         ),
     )
 

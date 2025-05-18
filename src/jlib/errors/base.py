@@ -6,6 +6,7 @@ class BaseError(Exception):
 
     def __init__(self, detail: str | None = None):
         super().__init__(detail or self.detail)
+        self.detail = detail or self.detail
 
     def __str__(self):
         return self.detail

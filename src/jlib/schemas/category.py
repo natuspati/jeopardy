@@ -41,7 +41,8 @@ class CategoryShowSchema(BaseSchema):
     id: int
     name: str
     prompts: Annotated[
-        list[PromptShowSchema], AfterValidator(_sort_prompts_by_priority)
+        list[PromptShowSchema],
+        AfterValidator(_sort_prompts_by_priority),
     ] = Field(default_factory=list)
 
 
@@ -67,7 +68,8 @@ class CategoryPartialUpdateSchema(BaseSchema):
 class CategoryUpdateShowSchema(BaseSchema, OneFieldSetSchemaMixin):
     name: str | None = None
     prompts: Annotated[
-        list[PromptPriorityUpdateSchema], AfterValidator(_sort_prompts_by_priority)
+        list[PromptPriorityUpdateSchema],
+        AfterValidator(_sort_prompts_by_priority),
     ] = Field(default_factory=list)
 
 
@@ -76,7 +78,8 @@ class CategoryFullUpdateSchema(BaseSchema):
     name: str | None = None
     owner_id: int
     prompts: Annotated[
-        list[PromptPriorityUpdateSchema], AfterValidator(_sort_prompts_by_priority)
+        list[PromptPriorityUpdateSchema],
+        AfterValidator(_sort_prompts_by_priority),
     ] = Field(default_factory=list)
 
 
@@ -89,7 +92,7 @@ class PaginatedBasicCategorySchema(PaginatedResponseSchema[BasicCategorySchema])
 
 
 class PaginatedBasicCategoryShowSchema(
-    PaginatedResponseSchema[BasicCategoryShowSchema]
+    PaginatedResponseSchema[BasicCategoryShowSchema],
 ):
     pass
 
@@ -98,5 +101,6 @@ class CategoryInGameSchema(BaseSchema):
     id: int
     name: str
     prompts: Annotated[
-        list[PromptInGameSchema], AfterValidator(_sort_prompts_by_priority)
+        list[PromptInGameSchema],
+        AfterValidator(_sort_prompts_by_priority),
     ] = Field(default_factory=list)
