@@ -11,7 +11,24 @@ from jlib.schemas.player import PlayerSchema
 from jlib.schemas.user import UserSchema
 
 
-def _check_players(players: list[PlayerSchema]) -> list[PlayerSchema]:
+def _check_update_players(players: list[PlayerSchema] | None) -> list[PlayerSchema] | None:
+    if players is None:
+        return None
+
+    lead_players = [p for p in players if p.type == LobbyMemberTypeEnum.LEAD]
+    if not lead_players:
+        raise ValueError("At least one player must be lead.")
+    elif len(lead_players) > 1:
+        raise ValueError("Only one player can be lead.")
+
+    selected_players = [p for p in players if p.selected]
+    if len(selected_players) > 1:
+        raise ValueError("No more than one player can be selected.")
+
+    return players
+
+
+def _check_players_for_lead(players: list[PlayerSchema]) -> list[PlayerSchema]:
     """
     Check whether there is at least one lead player.
     """
@@ -24,6 +41,7 @@ def _check_players(players: list[PlayerSchema]) -> list[PlayerSchema]:
         raise ValueError("At least one player must be lead.")
     elif len(lead_players) > 1:
         raise ValueError("Only one player can be lead.")
+
     return players
 
 
@@ -49,6 +67,14 @@ class LobbySchema(BaseSchema):
     players: list[PlayerSchema]
     categories: list[CategoryInGameSchema]
 
+    @property
+    def lead(self) -> PlayerSchema:
+        return next(player for player in self.players if player.type == LobbyMemberTypeEnum.LEAD)
+
+    @property
+    def selected(self) -> PlayerSchema | None:
+        return next((player for player in self.players if player.selected), None)
+
     def __contains__(self, user_id: int) -> bool:
         return any(player.user_id == user_id for player in self.players)
 
@@ -62,10 +88,8 @@ class LobbySchema(BaseSchema):
             if player.user_id == user_id:
                 return self.players.pop(i)
 
-    def get_lead(self) -> PlayerSchema | None:
-        for player in self.players:
-            if player.type == LobbyMemberTypeEnum.LEAD:
-                return player
+    def is_selected(self, user_id: int) -> bool:
+        return any(player.user_id == user_id and player.selected for player in self.players)
 
 
 class BasicLobbySchema(BaseSchema):
@@ -88,14 +112,14 @@ class LobbyCreateFromPresetSchema(LobbyCreateShowSchema):
 class LobbyCreateSchema(BaseSchema):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     state: LobbyStateEnum = LobbyStateEnum.CREATE
-    players: Annotated[list[PlayerSchema], AfterValidator(_check_players)]
+    players: Annotated[list[PlayerSchema], AfterValidator(_check_players_for_lead)]
     categories: Annotated[list[CategoryInGameSchema], AfterValidator(_check_categories)]
 
 
 class LobbyUpdateSchema(BaseSchema):
     id: uuid.UUID
     state: LobbyStateEnum | None = None
-    players: list[PlayerSchema] | None = None
+    players: Annotated[list[PlayerSchema] | None, AfterValidator(_check_update_players)] = None
 
 
 class LobbyJoinSchema(BasicLobbySchema):

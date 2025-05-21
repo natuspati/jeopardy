@@ -9,4 +9,5 @@ class PlayerSchema(BaseSchema):
     username: str
     lobby_id: uuid.UUID
     score: int | None = None
+    selected: bool = False
     type: LobbyMemberTypeEnum

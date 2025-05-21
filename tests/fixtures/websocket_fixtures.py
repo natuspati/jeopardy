@@ -80,7 +80,7 @@ async def ws_manager(lobby: LobbySchema) -> MockWSManager:
 @pytest.fixture
 async def lead_conn(lobby: LobbySchema, ws_manager: MockWSManager) -> MockWebSocket:
     return ws_manager.get_connection(
-        member_id=lobby.get_lead().user_id,
+        member_id=lobby.lead.user_id,
         room_id=str(lobby.id),
     )
 
@@ -113,8 +113,7 @@ async def lead_player_game(
     ws_manager: MockWSManager,
 ) -> GameFlowService:
     flow_service = GameFlowService(ws_manager=ws_manager, lobby_dal=lobby_dal)
-    lead = lobby.get_lead()
-    flow_service.player = lead
+    flow_service.player = lobby.lead
     flow_service.lobby_id = lobby.id
     flow_service.lobby = lobby
     return flow_service

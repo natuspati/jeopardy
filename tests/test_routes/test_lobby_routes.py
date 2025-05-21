@@ -4,7 +4,7 @@ from collections.abc import Callable
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from fixtures.factory_fixtures import LobbyFactory
+from fixtures.factory_fixtures import LobbyFactory, PlayerFactory
 from redis.asyncio import Redis
 
 from jlib.enums import LobbyMemberTypeEnum, LobbyStateEnum
@@ -18,10 +18,13 @@ async def test_get_lobbies(
     client: TestClient,
     redis_client: Redis,
     pagination: dict[str, int],
+    player_factory: PlayerFactory,
     lobby_factory: LobbyFactory,
 ):
+    lead_player = player_factory.build(type=LobbyMemberTypeEnum.LEAD)
+    other_players = player_factory.batch(size=3, type=LobbyMemberTypeEnum.PLAYER)
     lobby_count = 5
-    lobbies = lobby_factory.batch(size=lobby_count)
+    lobbies = lobby_factory.batch(size=lobby_count, players=[lead_player, *other_players])
     for lobby in lobbies:
         await redis_client.set(
             name=f"{settings.redis_namespace}lobby_lobby_id={lobby.id}",

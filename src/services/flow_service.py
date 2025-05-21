@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Annotated, Any
 
@@ -12,6 +13,8 @@ from jlib.schemas.lobby import LobbySchema, LobbyUpdateSchema
 from jlib.schemas.player import PlayerSchema
 from jlib.services import BaseGameFlowService
 from jlib.ws import WSManager, get_ws_manager
+
+_logger = logging.getLogger(__name__)
 
 
 class GameFlowService(BaseGameFlowService):
@@ -73,6 +76,11 @@ class GameFlowService(BaseGameFlowService):
             try:
                 await self._handle_message(message)
             except GameFlowError as error:
+                _logger.info(
+                    f"Game flow error: {error.detail}"
+                    + f"Player: {self.player.user_id}, lobby: {self.lobby.id}"
+                    + f"Player message: {message}",
+                )
                 await self._handle_game_error(error)
 
     async def _handle_message(self, message: dict[str, Any]) -> None:
@@ -83,8 +91,10 @@ class GameFlowService(BaseGameFlowService):
     async def _handle_action(self, action: str, **message: Any) -> None:
         await self._update_lobby()
         match action:
-            case "start":
+            case LobbyStateEnum.START:
                 await self._handle_start()
+            case LobbyStateEnum.SELECT_PLAYER:
+                await self._handle_select_player()
             case _:
                 raise WrongActionError(f"Unsupported action {action}")
 
@@ -99,14 +109,6 @@ class GameFlowService(BaseGameFlowService):
             message={"meta": f"Player {self.player.username} joined the lobby"},
         )
 
-    async def _handle_disconnect(self) -> None:
-        self.lobby.pop_player(self.player.user_id)
-        await self._update_lobby(players=self.lobby.players)
-        await self._ws.remove_connection(
-            member_id=self.player.user_id,
-            room_id=self.lobby_id,
-        )
-
     async def _handle_start(self) -> None:
         if self.player.type != LobbyMemberTypeEnum.LEAD:
             raise GameFlowError(f"Player {self.player.username} is not a lead")
@@ -117,12 +119,41 @@ class GameFlowService(BaseGameFlowService):
         await self._update_lobby(state=LobbyStateEnum.START)
         await self._send()
 
+    async def _handle_select_player(self, user_id: int) -> None:
+        if self.lobby.state not in {LobbyStateEnum.START, LobbyStateEnum.SELECT_PLAYER}:
+            raise GameFlowError("Cannot select player")
+
+        if self.player.type != LobbyMemberTypeEnum.LEAD:
+            raise GameFlowError(f"Player {self.player.username} is not a lead")
+        selected_player = self.lobby.selected
+        if selected_player:
+            raise GameFlowError(f"Player {selected_player.user_id} is already selected")
+
+        player = self.lobby[user_id]
+        if not player:
+            raise GameFlowError(f"Player {user_id} is not found in the lobby")
+        player.selected = True
+        await self._update_lobby(players=self.lobby.players)
+        await self._send(message={"meta": f"Player {player.user_id} has been selected"})
+
+    async def _handle_select_question(self) -> None:
+        if self.lobby.state in {LobbyStateEnum.CREATE, LobbyStateEnum.FINISH}:
+            raise GameFlowError("Cannot select question")
+
     async def _handle_game_error(self, error: GameFlowError) -> None:
         await self._send(
             self.player.user_id,
             event=LobbyEventEnum.ERROR,
             message={"error": error.detail},
             include_lobby=False,
+        )
+
+    async def _handle_disconnect(self) -> None:
+        self.lobby.pop_player(self.player.user_id)
+        await self._update_lobby(players=self.lobby.players)
+        await self._ws.remove_connection(
+            member_id=self.player.user_id,
+            room_id=self.lobby_id,
         )
 
     async def _send(
