@@ -137,4 +137,5 @@ class PromptUpdateSchema(BaseSchema):
 
 
 class PromptInGameSchema(PromptShowSchema):
+    selected: bool = False
     available: bool = True

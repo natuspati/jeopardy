@@ -34,8 +34,10 @@ class LobbyDAL(BaseLobbyDAL):
         existing_lobby = await self.select_by_id(lobby_update.id)
         if lobby_update.state is not None:
             existing_lobby.state = lobby_update.state
-        if lobby_update.players is not None:
+        if lobby_update.players:
             existing_lobby.players = lobby_update.players
+        if lobby_update.categories:
+            existing_lobby.categories = lobby_update.categories
 
         await self._redis.set(
             value=existing_lobby.model_dump_json(),

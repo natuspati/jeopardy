@@ -8,6 +8,7 @@ from jlib.schemas.base import BaseSchema
 from jlib.schemas.category import CategoryInGameSchema
 from jlib.schemas.pagination import PaginatedResponseSchema
 from jlib.schemas.player import PlayerSchema
+from jlib.schemas.prompt import PromptInGameSchema
 from jlib.schemas.user import UserSchema
 
 
@@ -82,14 +83,20 @@ class LobbySchema(BaseSchema):
         for player in self.players:
             if player.user_id == user_id:
                 return player
+        return None
 
     def pop_player(self, user_id: int) -> PlayerSchema | None:
         for i, player in enumerate(self.players):
             if player.user_id == user_id:
                 return self.players.pop(i)
+        return None
 
-    def is_selected(self, user_id: int) -> bool:
-        return any(player.user_id == user_id and player.selected for player in self.players)
+    def get_prompt(self, prompt_id: int) -> PromptInGameSchema | None:
+        for category in self.categories:
+            for prompt in category.prompts:
+                if prompt.id == prompt_id:
+                    return prompt
+        return None
 
 
 class BasicLobbySchema(BaseSchema):
@@ -120,6 +127,9 @@ class LobbyUpdateSchema(BaseSchema):
     id: uuid.UUID
     state: LobbyStateEnum | None = None
     players: Annotated[list[PlayerSchema] | None, AfterValidator(_check_update_players)] = None
+    categories: Annotated[list[CategoryInGameSchema] | None, AfterValidator(_check_categories)] = (
+        None
+    )
 
 
 class LobbyJoinSchema(BasicLobbySchema):

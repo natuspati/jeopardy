@@ -7,11 +7,13 @@ from fastapi import Depends, WebSocket, WebSocketDisconnect
 from dals import LobbyDAL
 from jlib.dals import BaseLobbyDAL
 from jlib.enums import LobbyStateEnum
-from jlib.enums.game import LobbyEventEnum, LobbyMemberTypeEnum
-from jlib.errors.game_flow import GameFlowError, WrongActionError
+from jlib.enums.game import LobbyEventEnum
+from jlib.errors.game_flow import GameFlowError, InvalidGameStateError, WrongActionError
+from jlib.schemas.category import CategoryInGameSchema
 from jlib.schemas.lobby import LobbySchema, LobbyUpdateSchema
 from jlib.schemas.player import PlayerSchema
 from jlib.services import BaseGameFlowService
+from jlib.utils.permission import ActionChecker
 from jlib.ws import WSManager, get_ws_manager
 
 _logger = logging.getLogger(__name__)
@@ -28,6 +30,7 @@ class GameFlowService(BaseGameFlowService):
         self._player: PlayerSchema | None = None
         self._lobby_id: str | None = None
         self._lobby: LobbySchema | None = None
+        self._checker = ActionChecker
 
     @property
     def player(self) -> PlayerSchema:
@@ -57,6 +60,10 @@ class GameFlowService(BaseGameFlowService):
     def lobby(self, lobby: LobbySchema) -> None:
         self._lobby = lobby
 
+    @property
+    def checker(self) -> ActionChecker:
+        return self._checker(lobby=self._lobby, player=self.player)
+
     async def play(self, new_player: PlayerSchema, connection: WebSocket) -> None:
         self.player = new_player
         self.lobby_id = new_player.lobby_id
@@ -75,9 +82,9 @@ class GameFlowService(BaseGameFlowService):
         async for message in receiver:
             try:
                 await self._handle_message(message)
-            except GameFlowError as error:
+            except (GameFlowError, WrongActionError) as error:
                 _logger.info(
-                    f"Game flow error: {error.detail}"
+                    f"Error: {error.detail}"
                     + f"Player: {self.player.user_id}, lobby: {self.lobby.id}"
                     + f"Player message: {message}",
                 )
@@ -94,7 +101,7 @@ class GameFlowService(BaseGameFlowService):
             case LobbyStateEnum.START:
                 await self._handle_start()
             case LobbyStateEnum.SELECT_PLAYER:
-                await self._handle_select_player()
+                await self._handle_select_player(**message)
             case _:
                 raise WrongActionError(f"Unsupported action {action}")
 
@@ -110,35 +117,26 @@ class GameFlowService(BaseGameFlowService):
         )
 
     async def _handle_start(self) -> None:
-        if self.player.type != LobbyMemberTypeEnum.LEAD:
-            raise GameFlowError(f"Player {self.player.username} is not a lead")
-
-        if self.lobby.state != LobbyStateEnum.CREATE:
-            raise GameFlowError("Lobby has already started")
-
+        self.checker.check_start()
         await self._update_lobby(state=LobbyStateEnum.START)
         await self._send()
 
-    async def _handle_select_player(self, user_id: int) -> None:
-        if self.lobby.state not in {LobbyStateEnum.START, LobbyStateEnum.SELECT_PLAYER}:
-            raise GameFlowError("Cannot select player")
-
-        if self.player.type != LobbyMemberTypeEnum.LEAD:
-            raise GameFlowError(f"Player {self.player.username} is not a lead")
-        selected_player = self.lobby.selected
-        if selected_player:
-            raise GameFlowError(f"Player {selected_player.user_id} is already selected")
-
-        player = self.lobby[user_id]
-        if not player:
-            raise GameFlowError(f"Player {user_id} is not found in the lobby")
+    async def _handle_select_player(self, **message: Any) -> None:
+        player = self.checker.check_select_player(**message)
         player.selected = True
-        await self._update_lobby(players=self.lobby.players)
+        await self._update_lobby(state=LobbyStateEnum.SELECT_QUESTION, players=self.lobby.players)
         await self._send(message={"meta": f"Player {player.user_id} has been selected"})
 
-    async def _handle_select_question(self) -> None:
-        if self.lobby.state in {LobbyStateEnum.CREATE, LobbyStateEnum.FINISH}:
-            raise GameFlowError("Cannot select question")
+    async def _handle_select_question(self, **message: Any) -> None:
+        try:
+            prompt = self.checker.check_select_question(**message)
+        except InvalidGameStateError as error:
+            await self._handle_state_error(error, LobbyStateEnum.SELECT_PLAYER)
+        else:
+            prompt.selected = False
+            prompt.available = False
+            await self._update_lobby(state=LobbyStateEnum.ANSWER_QUESTION)
+            await self._send(message={"meta": f"Prompt {prompt.id} has been selected"})
 
     async def _handle_game_error(self, error: GameFlowError) -> None:
         await self._send(
@@ -146,6 +144,18 @@ class GameFlowService(BaseGameFlowService):
             event=LobbyEventEnum.ERROR,
             message={"error": error.detail},
             include_lobby=False,
+        )
+
+    async def _handle_state_error(
+        self,
+        error: InvalidGameStateError,
+        desired_state: LobbyStateEnum,
+    ) -> None:
+        await self._update_lobby(state=desired_state)
+        await self._send(
+            event=LobbyEventEnum.ERROR,
+            message={"error": error.detail},
+            include_lobby=True,
         )
 
     async def _handle_disconnect(self) -> None:
@@ -180,9 +190,17 @@ class GameFlowService(BaseGameFlowService):
         *,
         state: LobbyStateEnum | None = None,
         players: list[PlayerSchema] | None = None,
+        categories: list[CategoryInGameSchema] | None = None,
     ) -> None:
-        if state or players:
-            await self._lobby_dal.update(
-                LobbyUpdateSchema(id=self.lobby_id, state=state, players=players),
-            )
+        if state or players or categories:
+            lobby_update = {"id": self.lobby_id}
+            if state:
+                lobby_update["state"] = state
+            if players:
+                lobby_update["players"] = players
+            if categories:
+                lobby_update["categories"] = categories
+
+            await self._lobby_dal.update(LobbyUpdateSchema(**lobby_update))
         self.lobby = await self._get_lobby()
+        _logger.info(f"Updated lobby {self.lobby_id} state")

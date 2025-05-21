@@ -15,6 +15,7 @@ class LobbyStateEnum(BaseLobbyEnum):
     START = "start"
     SELECT_PLAYER = "select_player"
     SELECT_QUESTION = "select_question"
+    ANSWER_QUESTION = "answer_question"
     ANSWER_QUESTION_SELECTED = "answer_question_selected"
     ANSWER_QUESTION_ALL = "answer_question_all"
     RATE_ANSWER = "rate_answer"
