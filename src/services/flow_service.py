@@ -102,6 +102,10 @@ class GameFlowService(BaseGameFlowService):
                 await self._handle_start()
             case LobbyStateEnum.SELECT_PLAYER:
                 await self._handle_select_player(**message)
+            case LobbyStateEnum.SELECT_QUESTION:
+                await self._handle_select_question(**message)
+            case LobbyStateEnum.ANSWER_QUESTION:
+                await self._handle_answer_question()
             case _:
                 raise WrongActionError(f"Unsupported action {action}")
 
@@ -137,6 +141,41 @@ class GameFlowService(BaseGameFlowService):
             prompt.available = False
             await self._update_lobby(state=LobbyStateEnum.ANSWER_QUESTION)
             await self._send(message={"meta": f"Prompt {prompt.id} has been selected"})
+
+    async def _handle_answer_question(self) -> None:
+        self.checker.check_answer()
+        await self._update_lobby(state=LobbyStateEnum.RATE_ANSWER)
+        await self._send(
+            message={"meta": f"Answer from player {self.player.user_id} has been selected"},
+        )
+
+    async def _handle_rate_answer(self, **message: Any) -> None:
+        rating = self.checker.check_rate_answer(**message)
+        selected_player = self.lobby.selected
+        if rating:
+            if selected_player:
+                await self._update_lobby(state=LobbyStateEnum.SELECT_QUESTION)
+                extra_message = {
+                    "meta": f"Player {selected_player.user_id} continues to select question",
+                }
+                players = None
+            else:
+                selected_player = self.lobby[self.player.user_id]
+                selected_player.selected = True
+                players = self.lobby.players
+                extra_message = {"meta": f"Player {selected_player.user_id} has been selected"}
+            await self._update_lobby(state=LobbyStateEnum.SELECT_QUESTION, players=players)
+            await self._send(message=extra_message)
+        else:
+            if selected_player:
+                selected_player.selected = False
+                players = self.lobby.players
+                extra_message = {"meta": f"Player {selected_player.user_id} has been unselected"}
+            else:
+                players = None
+                extra_message = None
+            await self._update_lobby(state=LobbyStateEnum.ANSWER_QUESTION, players=players)
+            await self._send(message=extra_message)
 
     async def _handle_game_error(self, error: GameFlowError) -> None:
         await self._send(
