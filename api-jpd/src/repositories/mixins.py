@@ -91,7 +91,7 @@ class RedisRepoMixin:
         self,
         name: str,
         value: Any,
-        expire: int | timedelta | UnsetSentinel | None = UnsetSentinel,
+        expire: int | timedelta | type(UnsetSentinel) | None = UnsetSentinel,
         **kwargs,
     ) -> bool:
         key = self._create_key(name, **kwargs)

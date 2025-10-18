@@ -9,7 +9,10 @@ dependencies = [
     "asyncpg>=0.30.0",
     "fastapi>=0.119.0",
     "orjson>=3.11.3",
+    "pwdlib[argon2]>=0.2.1",
     "pydantic-settings>=2.11.0",
+    "pyjwt>=2.10.1",
+    "python-multipart>=0.0.20",
     "redis>=6.4.0",
     "sqlalchemy[asyncio]>=2.0.44",
     "uvicorn>=0.37.0",
@@ -84,3 +87,5 @@ combine-as-imports = false
 "src/api/**/*.py" = ["ANN201"]
 # Ignore type annotations for tests
 "**/tests/**" = ["ANN"]
+# Ignore "undefined name" inside all model files
+"src/models/**/*.py" = ["F821"]

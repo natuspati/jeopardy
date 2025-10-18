@@ -1,1 +1,6 @@
 UnsetSentinel = object()
+
+# Game rules
+NUM_PROMPTS_IN_CATEGORY = 5
+MIN_CATEGORIES_IN_LOBBY = 3
+MAX_CATEGORIES_IN_LOBBY = 5

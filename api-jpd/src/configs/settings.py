@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     # Authentication
     openapi_schema_user: str = "jeopardy"
     openapi_schema_pass: str = "jeopardy"
+    secret_key: str = "secret"
+    token_expiration_sec: int = 24 * 60 * 60  # 1 day
+
+    # Pagination
+    page_size: int = 10
 
     # Variables for database
     db_apply_migrations: bool = False
