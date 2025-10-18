@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:15
+    container_name: jeopardy_db
+    restart: unless-stopped
+    env_file:
+      - local.env
+    environment:
+      POSTGRES_USER: ${API_DB_USER}
+      POSTGRES_PASSWORD: ${API_DB_PASS}
+      POSTGRES_DB: ${API_DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - local
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${API_DB_USER}"]
+      interval: 30s
+      timeout: 5s
+      retries: 2
+
+  redis:
+    image: redis:7
+    container_name: jeopardy_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - local
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 2
+
+  api-jpd:
+    build:
+      context: ../../api-jpd
+      dockerfile: Dockerfile
+    container_name: jeopardy_api
+    env_file:
+      - local.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../api-jpd/src:/opt/api-jpd/src
+    networks:
+      - local
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  local:

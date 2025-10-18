@@ -1,0 +1,86 @@
+[project]
+name = "api-jpd"
+version = "0.1.0"
+description = "Jeopardy API"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "alembic>=1.17.0",
+    "asyncpg>=0.30.0",
+    "fastapi>=0.119.0",
+    "orjson>=3.11.3",
+    "pydantic-settings>=2.11.0",
+    "redis>=6.4.0",
+    "sqlalchemy[asyncio]>=2.0.44",
+    "uvicorn>=0.37.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "polyfactory>=2.22.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-env>=1.2.0",
+    "ruff>=0.14.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]
+addopts = "--log-cli-level=WARNING"
+asyncio_mode="auto"
+asyncio_default_fixture_loop_scope = "session"
+
+[tool.pytest_env]
+API_ENVIRONMENT = "test"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = false
+indent-style = "space"
+
+[tool.ruff.lint]
+select = [
+    "F",   # Pyflakes (basic Python errors)
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "I",   # isort (import sorting)
+    "UP",  # pyupgrade (Python version upgrade)
+    "B",   # flake8-bugbear (common bugs)
+    "COM", # flake8-commas (trailing commas!)
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "RUF", # Ruff-specific rules
+    "PT",  # flake8-pytest-style
+    "ISC", # flake8-implicit-str-concat
+    "ANN", # flake8-annotations
+]
+ignore = [
+    "ANN401", # Allow Any type annotations
+    "ANN204", # Don't require return type annotation for __init__ methods
+    "ANN002", # Don't require type annotation for *args
+    "ANN003", # Don't require type annotation for **kwargs
+]
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-branches = 12
+max-returns = 2
+max-statements = 50
+max-locals = 15
+max-public-methods = 20
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = true
+force-wrap-aliases = true
+combine-as-imports = false
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # Allow logic in init files
+# Don't require return type for API route functions
+"src/api/**/*.py" = ["ANN201"]
+# Ignore type annotations for tests
+"**/tests/**" = ["ANN"]
