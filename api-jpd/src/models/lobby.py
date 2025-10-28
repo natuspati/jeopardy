@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, ForeignKey, text
+from sqlalchemy import TIMESTAMP, Enum, ForeignKey, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from enums.lobby import LobbyStateEnum
 from models.base import BaseDBModel
 
 
@@ -11,6 +12,7 @@ class LobbyModel(BaseDBModel):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     host_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    state: Mapped[LobbyStateEnum] = mapped_column(Enum(LobbyStateEnum, name="lobby_state_enum"))
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=False),
         server_default=text("CURRENT_TIMESTAMP"),

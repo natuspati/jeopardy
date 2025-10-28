@@ -27,7 +27,7 @@ class LobbyRepo(RelationalRepoMixin):
         return validate_model(lobby, LobbySchema)
 
     async def filter(self, search: LobbySearchSchema) -> list[LobbySchema]:
-        filters = []
+        filters = [LobbyModel.state == search.state]
         if search.host_id is not None:
             filters.append(LobbyModel.host_id == search.host_id)
         if search.created_at is not None:

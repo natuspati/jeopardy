@@ -14,7 +14,7 @@ router.include_router(prompt.router)
 
 
 @router.get("", response_model=list[CategorySchema])
-async def get_categories(
+async def search_categories(
     category_service: Annotated[CategoryService, Depends()],
     name: Annotated[str | None, Query(min_length=2, max_length=64)] = None,
 ):

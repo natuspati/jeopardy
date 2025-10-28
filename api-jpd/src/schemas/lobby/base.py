@@ -1,12 +1,14 @@
 from pydantic import BaseModel, field_validator
 
 from constants import MAX_CATEGORIES_IN_LOBBY, MIN_CATEGORIES_IN_LOBBY
+from enums.lobby import LobbyStateEnum
 from schemas.base import NoTZDateTime
 
 
 class BaseLobbySchema(BaseModel):
     id: int
     host_id: str
+    state: LobbyStateEnum
     created_at: NoTZDateTime
 
 
@@ -29,8 +31,10 @@ class LobbyCreatePublicSchema(BaseModel):
 
 class LobbyCreateSchema(LobbyCreatePublicSchema):
     host_id: int
+    state: LobbyStateEnum = LobbyStateEnum.CREATED
 
 
 class LobbySearchSchema(BaseModel):
     host_id: int | None = None
+    state: LobbyStateEnum = LobbyStateEnum.CREATED
     created_at: NoTZDateTime | None = None

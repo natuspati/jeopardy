@@ -6,7 +6,7 @@ from schemas.base import OneFieldSetMixin, supplied_value_is_not_none
 from schemas.category.base import BaseCategorySchema
 from schemas.lobby.base import BaseLobbySchema
 from schemas.lobby_category.base import BaseLobbyCategorySchema
-from schemas.prompt.base import BasePromptSchema, PromptOrderUpdateSchema
+from schemas.prompt.base import BasePromptSchema, PromptInGameSchema, PromptOrderUpdateSchema
 from schemas.user.base import BaseUserSchema
 
 
@@ -59,3 +59,9 @@ class CategoryUpdateSchema(BaseModel, OneFieldSetMixin):
             raise ValueError(f"A category cannot have more than {NUM_PROMPTS_IN_CATEGORY} prompts.")
 
         return prompts
+
+
+class CategoryInGameSchema(BaseModel):
+    id: int
+    name: str
+    prompts: list[PromptInGameSchema]

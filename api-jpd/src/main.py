@@ -10,7 +10,7 @@ if __name__ == "__main__":
         run_migrations()
 
     uvicorn.run(
-        app="application:app",
+        app="application:fastapi_app",
         host=settings.host,
         port=settings.port,
         reload=settings.reload,
