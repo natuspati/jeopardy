@@ -3,8 +3,10 @@ from typing import Annotated
 from fastapi import Depends
 
 from errors.auth import ForbiddenError
-from errors.request import NotFoundError
+from errors.request import BadRequestError, NotFoundError
+from errors.storage import DBError
 from repositories import PromptRepo
+from schemas.category.nested import CategorySchema
 from schemas.prompt.base import (
     BasePromptSchema,
     PromptCreatePublicSchema,
@@ -36,12 +38,20 @@ class PromptService:
         category_id: int,
         user_id: int,
     ) -> BasePromptSchema:
-        await self._check_category_permissions(category_id=category_id, user_id=user_id)
+        category = await self._check_category_permissions(category_id=category_id, user_id=user_id)
+        if category.is_full:
+            raise BadRequestError("Category is full")
+        if prompt.order in {p.order for p in category.prompts}:
+            raise BadRequestError("Prompt with this order already exists")
+
         prompt_with_category = PromptCreateSchema(
             category_id=category_id,
             **prompt.model_dump(exclude_unset=True, exclude_none=True),
         )
-        return await self._prompt_repo.insert(prompt_with_category)
+        try:
+            return await self._prompt_repo.insert(prompt_with_category)
+        except DBError as error:
+            raise BadRequestError("Invalid prompt order in the category") from error
 
     async def update_prompt(
         self,
@@ -57,7 +67,8 @@ class PromptService:
         await self._check_category_permissions(category_id=category_id, user_id=user_id)
         return await self._prompt_repo.delete(prompt_id=prompt_id)
 
-    async def _check_category_permissions(self, category_id: int, user_id: int) -> None:
+    async def _check_category_permissions(self, category_id: int, user_id: int) -> CategorySchema:
         category = await self._category_service.get_category(category_id)
         if category.owner_id != user_id:
             raise ForbiddenError(f"Category {category_id} is not owned by user {user_id}")
+        return category

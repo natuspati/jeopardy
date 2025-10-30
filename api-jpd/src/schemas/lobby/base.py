@@ -7,7 +7,7 @@ from schemas.base import NoTZDateTime
 
 class BaseLobbySchema(BaseModel):
     id: int
-    host_id: str
+    host_id: int
     state: LobbyStateEnum
     created_at: NoTZDateTime
 

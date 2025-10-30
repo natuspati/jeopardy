@@ -16,6 +16,16 @@ class CategorySchema(BaseCategorySchema):
     lobbies: list[BaseLobbySchema]
     lobby_categories: list[BaseLobbyCategorySchema]
 
+    @property
+    def is_full(self) -> bool:
+        return len(self.prompts) >= NUM_PROMPTS_IN_CATEGORY
+
+    @property
+    def is_valid(self) -> bool:
+        return self.is_full and sorted([p.order for p in self.prompts]) == list(
+            range(1, NUM_PROMPTS_IN_CATEGORY + 1),
+        )
+
 
 class CategoryWithPromptsSchema(BaseCategorySchema):
     prompts: list[BasePromptSchema]

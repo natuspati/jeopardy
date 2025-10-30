@@ -22,7 +22,7 @@ class PromptCreatePublicSchema(BaseModel):
     question_type: PromptTypeEnum
     answer: str
     answer_type: PromptTypeEnum
-    order: int
+    order: int = Field(ge=1, le=NUM_PROMPTS_IN_CATEGORY)
     score: int
 
 

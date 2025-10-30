@@ -15,7 +15,12 @@ class CategoryRepo(RelationalRepoMixin):
         stmt = (
             select(CategoryModel)
             .where(CategoryModel.id == category_id)
-            .options(selectinload(CategoryModel.owner), selectinload(CategoryModel.prompts))
+            .options(
+                selectinload(CategoryModel.owner),
+                selectinload(CategoryModel.prompts),
+                selectinload(CategoryModel.lobbies),
+                selectinload(CategoryModel.lobby_categories),
+            )
         )
         category = await self.scalar(stmt)
         return validate_model(category, CategorySchema)
@@ -31,7 +36,16 @@ class CategoryRepo(RelationalRepoMixin):
         if name is not None:
             filters.append(CategoryModel.name.ilike(f"%{name}%"))
 
-        stmt = select(CategoryModel).limit(settings.page_size)
+        stmt = (
+            select(CategoryModel)
+            .options(
+                selectinload(CategoryModel.owner),
+                selectinload(CategoryModel.prompts),
+                selectinload(CategoryModel.lobbies),
+                selectinload(CategoryModel.lobby_categories),
+            )
+            .limit(settings.page_size)
+        )
         if filters:
             stmt = stmt.where(and_(*filters))
         categories = await self.scalars(stmt)

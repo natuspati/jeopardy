@@ -1,10 +1,8 @@
-import React from 'react';
-
 const Home = () => {
   return (
-    <div>
-      <h2>Home Page</h2>
-      <p>Welcome to the home page!</p>
+    <div className="text-center">
+      <h1 className="text-5xl font-extrabold text-gray-900 mb-4">Welcome to Jeopardy!</h1>
+      <p className="text-xl text-gray-600">The ultimate web-based trivia game. Test your knowledge and challenge your friends.</p>
     </div>
   );
 };

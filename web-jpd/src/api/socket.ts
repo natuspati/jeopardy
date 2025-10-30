@@ -1,5 +1,9 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:8000');
-
-export default socket;
+export function createSocket(namespace: string, query = {}): Socket {
+  return io(`http://localhost:8000/${namespace}`, {
+    path: "/ws",
+    transports: ["websocket"],
+    query,
+  });
+}

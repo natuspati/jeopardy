@@ -20,7 +20,7 @@ class LobbyRepo(RelationalRepoMixin):
             .options(
                 selectinload(LobbyModel.host),
                 selectinload(LobbyModel.lobby_categories),
-                selectinload(LobbyModel.categories).selectinload(CategoryModel.prompts),
+                selectinload(LobbyModel.categories).options(selectinload(CategoryModel.prompts)),
             )
         )
         lobby = await self.scalar(stmt)
@@ -34,8 +34,9 @@ class LobbyRepo(RelationalRepoMixin):
             filters.append(LobbyModel.created_at >= search.created_at)
 
         stmt = select(LobbyModel).options(
+            selectinload(LobbyModel.host),
             selectinload(LobbyModel.lobby_categories),
-            selectinload(LobbyModel.categories),
+            selectinload(LobbyModel.categories).options(selectinload(CategoryModel.prompts)),
         )
         if filters:
             stmt = stmt.where(and_(*filters))

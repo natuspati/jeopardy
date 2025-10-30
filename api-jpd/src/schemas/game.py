@@ -12,5 +12,5 @@ class GameSchema(BaseModel):
     lead: LeadSchema
     players: list[PlayerSchema]
     categories: list[CategoryInGameSchema]
-    selected_player: PlayerSchema
-    selected_prompt: BasePromptSchema
+    selected_player: PlayerSchema | None = None
+    selected_prompt: BasePromptSchema | None = None

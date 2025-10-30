@@ -18,7 +18,7 @@ async def search_categories(
     category_service: Annotated[CategoryService, Depends()],
     name: Annotated[str | None, Query(min_length=2, max_length=64)] = None,
 ):
-    return await category_service.search_categories(name)
+    return await category_service.search_categories(name=name)
 
 
 @router.get("/{category_id}", response_model=CategorySchema)

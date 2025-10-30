@@ -11,8 +11,6 @@ LOG_FORMAT = "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
 
 
 class ProjectLoggerFilter(logging.Filter):
-    """Filter that allows project logs at configured level, external logs at WARNING+"""
-
     def __init__(self) -> None:
         super().__init__()
         self.project_modules = {
@@ -29,6 +27,7 @@ class ProjectLoggerFilter(logging.Filter):
             "lifespan",
             "main",
             "migrations",
+            "websocket"
         }
         self.project_log_level = getattr(logging, LOG_LEVEL)
 
@@ -41,7 +40,6 @@ class ProjectLoggerFilter(logging.Filter):
 
 
 def override_external_loggers() -> None:
-    """Configure logging to set external loggers to WARNING level."""
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S"))

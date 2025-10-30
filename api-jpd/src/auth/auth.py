@@ -63,7 +63,7 @@ async def login_user(
         username=form_data.username,
         extra=False,
     )
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(form_data.password, user.password):
         raise UnauthorizedError("Invalid username or password")
 
     access_token_expires = timedelta(seconds=settings.token_expiration_sec)

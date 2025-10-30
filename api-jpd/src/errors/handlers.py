@@ -50,10 +50,6 @@ async def _handle_sql_model_validation_error(
 def _log_error(request: Request, error_description: str) -> None:
     error_msg = f"Error occurred: {request.method} {request.url}"
 
-    request_headers = request.headers
-    if request_headers:
-        error_msg += f"\nHeaders: {request_headers.items()}"
-
     request_cookies = request.cookies
     if request_cookies:
         error_msg += f"\nCookies: {request_cookies}"
