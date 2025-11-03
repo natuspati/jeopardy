@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any, Self
 
-from pydantic import AfterValidator, model_validator
-from pydantic_core.core_schema import ValidationInfo
+from pydantic import AfterValidator, ValidationInfo, model_validator
 
 from errors.request import InputValidationError
 

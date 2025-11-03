@@ -2,6 +2,12 @@ from enum import StrEnum, auto
 
 
 class PlayerStateEnum(StrEnum):
-    ACTIVE = auto()
+    SELECTED = auto()
+    CONNECTED = auto()
     DISCONNECTED = auto()
     BANNED = auto()
+
+
+class LeadStateEnum(StrEnum):
+    CONNECTED = auto()
+    DISCONNECTED = auto()

@@ -1,5 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
-from pydantic_core.core_schema import ValidationInfo
+from pydantic import BaseModel, Field, ValidationInfo, computed_field, field_validator
 
 from constants import NUM_PROMPTS_IN_CATEGORY
 from schemas.base import OneFieldSetMixin, supplied_value_is_not_none
@@ -20,6 +19,7 @@ class CategorySchema(BaseCategorySchema):
     def is_full(self) -> bool:
         return len(self.prompts) >= NUM_PROMPTS_IN_CATEGORY
 
+    @computed_field
     @property
     def is_valid(self) -> bool:
         return self.is_full and sorted([p.order for p in self.prompts]) == list(
@@ -29,6 +29,16 @@ class CategorySchema(BaseCategorySchema):
 
 class CategoryWithPromptsSchema(BaseCategorySchema):
     prompts: list[BasePromptSchema]
+
+    @property
+    def is_full(self) -> bool:
+        return len(self.prompts) >= NUM_PROMPTS_IN_CATEGORY
+
+    @property
+    def is_valid(self) -> bool:
+        return self.is_full and sorted([p.order for p in self.prompts]) == list(
+            range(1, NUM_PROMPTS_IN_CATEGORY + 1),
+        )
 
 
 class CategoryUpdateSchema(BaseModel, OneFieldSetMixin):

@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-import redis.asyncio as redis
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,10 +51,3 @@ async def get_db_session(
 
 def get_redis_manager() -> RedisManager:
     return _default_redis_manager
-
-
-async def get_redis_client(
-    redis_manager: Annotated[RedisManager, Depends(get_redis_manager)],
-) -> AsyncGenerator[redis.Redis, None]:
-    async with redis_manager.client() as client:
-        yield client

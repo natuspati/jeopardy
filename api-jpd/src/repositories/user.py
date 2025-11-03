@@ -40,6 +40,29 @@ class UserRepo(RelationalRepoMixin):
         validation_schema = UserSchema if load_lobbies or load_categories else BaseUserSchema
         return validate_model(user, validation_schema)
 
+    async def select_many(
+        self,
+        *user_ids: int,
+        load_categories: bool = False,
+        load_lobbies: bool = False,
+    ) -> list[UserSchema] | list[BaseUserSchema]:
+        if not user_ids:
+            raise BadRequestError("No user IDs have been provided")
+
+        options = []
+        if load_categories:
+            options.append(selectinload(UserModel.categories))
+        if load_lobbies:
+            options.append(selectinload(UserModel.lobbies))
+
+        stmt = select(UserModel).where(UserModel.id.in_(user_ids))
+        if options:
+            stmt = stmt.options(*options)
+
+        users = await self.scalars(stmt)
+        validation_schema = UserSchema if load_lobbies or load_categories else BaseUserSchema
+        return validate_model(users, validation_schema)
+
     async def insert(self, user: UserCreateSchema) -> BaseUserSchema:
         stmt = insert(UserModel).values(user.model_dump()).returning(UserModel)
         created_user = await self.scalar(stmt)

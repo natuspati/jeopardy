@@ -27,7 +27,7 @@ class ProjectLoggerFilter(logging.Filter):
             "lifespan",
             "main",
             "migrations",
-            "websocket"
+            "websocket",
         }
         self.project_log_level = getattr(logging, LOG_LEVEL)
 

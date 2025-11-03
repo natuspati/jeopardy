@@ -8,5 +8,5 @@ class PromptTypeEnum(StrEnum):
 
 
 class PromptStateEnum(StrEnum):
-    ACTIVE = auto()
-    INACTIVE = auto()
+    SELECTED = auto()
+    NOT_SELECTED = auto()

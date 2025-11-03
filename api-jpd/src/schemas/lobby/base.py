@@ -34,6 +34,10 @@ class LobbyCreateSchema(LobbyCreatePublicSchema):
     state: LobbyStateEnum = LobbyStateEnum.CREATED
 
 
+class LobbyStartedPublicSchema(BaseLobbySchema):
+    game_url: str
+
+
 class LobbySearchSchema(BaseModel):
     host_id: int | None = None
     state: LobbyStateEnum = LobbyStateEnum.CREATED

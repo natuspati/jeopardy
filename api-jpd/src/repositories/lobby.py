@@ -1,7 +1,8 @@
-from sqlalchemy import and_, delete, desc, insert, select
+from sqlalchemy import and_, delete, desc, insert, select, update
 from sqlalchemy.orm import selectinload
 
 from configs import settings
+from enums.lobby import LobbyStateEnum
 from models.category import CategoryModel
 from models.lobby import LobbyModel
 from models.lobby_category import LobbyCategoryModel
@@ -58,6 +59,11 @@ class LobbyRepo(RelationalRepoMixin):
                 for cid in lobby.category_ids
             ],
         )
+        return await self.select(lobby_id)
+
+    async def update(self, lobby_id: int, state: LobbyStateEnum) -> LobbySchema:
+        stmt = update(LobbyModel).where(LobbyModel.id == lobby_id).values(state=state)
+        await self.scalar(stmt)
         return await self.select(lobby_id)
 
     async def delete(self, lobby_id: int) -> None:

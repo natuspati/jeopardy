@@ -8,3 +8,7 @@ class LobbySchema(BaseLobbySchema):
     host: BaseUserSchema
     categories: list[CategoryWithPromptsSchema]
     lobby_categories: list[BaseLobbyCategorySchema]
+
+    @property
+    def is_valid(self) -> bool:
+        return all(category.is_valid for category in self.categories)

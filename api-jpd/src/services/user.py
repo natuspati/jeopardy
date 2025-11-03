@@ -28,6 +28,20 @@ class UserService:
             load_categories=extra,
         )
 
+    async def get_users(
+        self,
+        *user_ids: int,
+        extra: bool = False,
+    ) -> list[UserSchema] | list[BaseUserSchema]:
+        if not user_ids:
+            return []
+
+        return await self._user_repo.select_many(
+            *user_ids,
+            load_lobbies=extra,
+            load_categories=extra,
+        )
+
     async def create_user(self, user: UserCreatePublicSchema) -> BaseUserSchema:
         user_with_hash_pass = UserCreateSchema(
             username=user.username,

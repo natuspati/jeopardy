@@ -12,7 +12,7 @@ from sqlalchemy.exc import DatabaseError
 from configs import settings
 from constants import UnsetSentinel
 from errors.storage import COMMON_DB_ERRORS, DBError, RedisBaseError
-from storages import DBManager, get_db_manager, get_redis_client
+from storages import DBManager, RedisManager, get_db_manager, get_redis_manager
 
 _logger = logging.getLogger(__name__)
 
@@ -76,16 +76,17 @@ class RedisRepoMixin:
 
     def __init__(
         self,
-        redis_client: Annotated[redis.Redis, Depends(get_redis_client)],
+        redis_manager: Annotated[RedisManager, Depends(get_redis_manager)],
     ):
-        self._client = redis_client
+        self._manger = redis_manager
 
     async def get(self, name: str, **kwargs) -> Any:
         key = self._create_key(name, **kwargs)
-        try:
-            return await self._client.get(key)
-        except redis.RedisError as error:
-            return self._handle_error(key, error=error)
+        async with self._manger.client() as client:
+            try:
+                return await client.get(key)
+            except redis.RedisError as error:
+                return self._handle_error(key, error=error)
 
     async def set(
         self,
@@ -96,17 +97,19 @@ class RedisRepoMixin:
     ) -> bool:
         key = self._create_key(name, **kwargs)
         expire = self.EXPIRATION if expire is UnsetSentinel else expire
-        try:
-            return await self._client.set(key, value, ex=expire)
-        except redis.RedisError as error:
-            return self._handle_error(key, error=error)
+        async with self._manger.client() as client:
+            try:
+                return await client.set(key, value, ex=expire)
+            except redis.RedisError as error:
+                return self._handle_error(key, error=error)
 
     async def delete(self, name: str, **kwargs) -> int:
         key = self._create_key(name, **kwargs)
-        try:
-            return await self._client.delete(key)
-        except redis.RedisError as error:
-            return self._handle_error(key, error=error)
+        async with self._manger.client() as client:
+            try:
+                return await client.delete(key)
+            except redis.RedisError as error:
+                return self._handle_error(key, error=error)
 
     @classmethod
     def _create_key(cls, name: str, **kwargs) -> str:

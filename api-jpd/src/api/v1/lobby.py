@@ -3,7 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 
 from auth import authenticate_user
-from schemas.lobby.base import BaseLobbySchema, LobbyCreatePublicSchema, LobbySearchSchema
+from schemas.lobby.base import (
+    BaseLobbySchema,
+    LobbyCreatePublicSchema,
+    LobbySearchSchema,
+    LobbyStartedPublicSchema,
+)
 from schemas.lobby.nested import LobbySchema
 from schemas.user.base import BaseUserSchema
 from services import LobbyService
@@ -34,6 +39,19 @@ async def create_lobby(
     user: Annotated[BaseUserSchema, Depends(authenticate_user)],
 ):
     return await lobby_service.create_lobby(lobby, user_id=user.id)
+
+
+@router.post(
+    "{lobby_id}/start",
+    response_model=LobbyStartedPublicSchema,
+    status_code=status.HTTP_201_CREATED,
+)
+async def start_lobby(
+    lobby_id: int,
+    lobby_service: Annotated[LobbyService, Depends()],
+    user: Annotated[BaseUserSchema, Depends(authenticate_user)],
+):
+    return await lobby_service.start_lobby(lobby_id, user_id=user.id)
 
 
 @router.delete("/{lobby_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)

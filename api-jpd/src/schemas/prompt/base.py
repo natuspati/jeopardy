@@ -1,5 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
-from pydantic_core.core_schema import ValidationInfo
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from constants import NUM_PROMPTS_IN_CATEGORY
 from enums.prompt import PromptStateEnum, PromptTypeEnum
@@ -53,4 +52,4 @@ class PromptOrderUpdateSchema(BaseModel):
 
 
 class PromptInGameSchema(BasePromptSchema):
-    state: PromptStateEnum = PromptStateEnum.ACTIVE
+    state: PromptStateEnum = PromptStateEnum.NOT_SELECTED
