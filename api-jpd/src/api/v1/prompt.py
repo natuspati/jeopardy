@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 
 from auth import authenticate_user
-from schemas.category.nested import CategorySchema
 from schemas.prompt.base import BasePromptSchema, PromptCreatePublicSchema, PromptUpdateSchema
 from schemas.prompt.nested import PromptSchema
 from schemas.user.base import BaseUserSchema
@@ -35,7 +34,7 @@ async def create_prompt(
     )
 
 
-@router.patch("/{prompt_id}", response_model=CategorySchema)
+@router.patch("/{prompt_id}", response_model=BasePromptSchema)
 async def update_prompt(
     category_id: int,
     prompt_id: int,

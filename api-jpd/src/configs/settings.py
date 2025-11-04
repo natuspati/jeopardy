@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import Literal
 
 import sqlalchemy
@@ -54,13 +55,14 @@ class Settings(BaseSettings):
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
+    redis_user: str | None = None
     redis_password: str | None = None
     redis_decode_responses: bool = True
     redis_socket_timeout: float | None = None
     redis_max_connections: int = 10
     redis_expiration_sec: int = 7 * 24 * 60 * 60  # 7 days in seconds
 
-    @property
+    @cached_property
     def db_url(self) -> sqlalchemy.URL:
         return sqlalchemy.URL.create(
             drivername=self.db_driver,
@@ -69,6 +71,17 @@ class Settings(BaseSettings):
             username=self.db_user,
             password=self.db_pass,
             database=self.db_name,
+        )
+
+    @cached_property
+    def redis_url(self) -> sqlalchemy.URL:
+        return sqlalchemy.URL.create(
+            drivername="redis",
+            host=self.redis_host,
+            port=self.redis_port,
+            username=self.redis_user,
+            password=self.redis_password,
+            database=str(self.redis_db),
         )
 
 

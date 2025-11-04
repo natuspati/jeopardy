@@ -1,5 +1,8 @@
 UnsetSentinel = object()
 
+# Time
+ONE_DAY_IN_SECONDS = 60 * 60 * 24
+
 # Game rules
 NUM_PROMPTS_IN_CATEGORY = 3
 MIN_CATEGORIES_IN_LOBBY = 3

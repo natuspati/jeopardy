@@ -23,24 +23,26 @@ from schemas.game_event.start import GameStartedEvent
 from schemas.player import PlayerUpdateSchema
 from schemas.user.base import BaseUserSchema
 from services import GameService, UserService
-from services.dependencies import get_game_service, get_user_service
+from services.dependencies import get_game_service
 
 _logger = logging.getLogger(__name__)
 
 
 class GameNamespace(socketio.AsyncNamespace):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
     @handle_event_errors(emit_error=True, return_value=False)
-    async def on_connect(self, sid: str, environ: dict[str, Any], auth: dict[str, Any]) -> bool:
-        async with get_user_service() as user_service, get_game_service() as game_service:
+    async def on_connect(
+        self,
+        sid: str,
+        environ: dict[str, Any],
+        auth: dict[str, Any] | None = None,
+    ) -> bool:
+        async with get_game_service() as game_service:
             return await self._connect(
                 sid=sid,
                 environ=environ,
                 auth=auth,
                 game_service=game_service,
-                user_service=user_service,
+                user_service=game_service._user_service,
             )
 
     @handle_event_errors(emit_error=False, return_value=None)
@@ -58,7 +60,7 @@ class GameNamespace(socketio.AsyncNamespace):
         self,
         sid: str,
         environ: dict[str, Any],
-        auth: dict[str, Any],
+        auth: dict[str, Any] | None,
         game_service: GameService,
         user_service: UserService,
     ) -> bool:
@@ -262,7 +264,14 @@ class GameNamespace(socketio.AsyncNamespace):
         )
 
     @classmethod
-    async def _authenticate(cls, auth: dict[str, Any], user_service: UserService) -> BaseUserSchema:
+    async def _authenticate(
+        cls,
+        auth: dict[str, Any] | None,
+        user_service: UserService,
+    ) -> BaseUserSchema:
+        if not auth:
+            raise UnauthorizedError("Missing authorization credentials")
+
         token = auth.get("token")
         if not token:
             raise UnauthorizedError("Missing authorization token")
@@ -292,13 +301,13 @@ class GameNamespace(socketio.AsyncNamespace):
             raise BadRequestError("No query parameters provided")
 
         query_params = parse_qs(query_string)
-        lobby_ids = query_params.get("lobby_id")
-        if not lobby_ids or len(lobby_ids) > 1:
-            raise BadRequestError("Invalid lobby_id in query parameters")
+        game_ids = query_params.get("id")
+        if not game_ids or len(game_ids) > 1:
+            raise BadRequestError("Invalid game ID in query parameters")
 
         try:
-            lobby_id = int(lobby_ids[0])
+            game_id = int(game_ids[0])
         except ValueError as error:
-            raise BadRequestError(f"Invalid lobby ID {lobby_ids[0]}") from error
+            raise BadRequestError(f"Invalid game ID {game_ids[0]}") from error
 
-        return lobby_id
+        return game_id

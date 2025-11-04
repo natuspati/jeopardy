@@ -66,14 +66,22 @@ class CategoryRepo(RelationalRepoMixin):
             await self.execute(stmt)
 
         if category.prompts is not None:
-            mapping = {p.id: p.order for p in category.prompts}
+            final_mapping = {p.id: p.order for p in category.prompts}
+            temp_mapping = {p_id: -order for p_id, order in final_mapping.items()}
 
-            stmt = (
+            stmt_temp = (
                 update(PromptModel)
-                .where(PromptModel.id.in_(mapping.keys()))
-                .values(order=case(mapping, value=PromptModel.id))
+                .where(PromptModel.id.in_(temp_mapping.keys()))
+                .values(order=case(temp_mapping, value=PromptModel.id))
             )
-            await self.execute(stmt)
+            await self.execute(stmt_temp)
+
+            stmt_final = (
+                update(PromptModel)
+                .where(PromptModel.id.in_(final_mapping.keys()))
+                .values(order=case(final_mapping, value=PromptModel.id))
+            )
+            await self.execute(stmt_final)
 
     async def delete(self, category_id: int) -> None:
         stmt = delete(CategoryModel).where(CategoryModel.id == category_id)
