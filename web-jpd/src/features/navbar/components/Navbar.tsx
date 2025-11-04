@@ -16,13 +16,15 @@ const Navbar = () => {
             </Link>
           </div>
           <div className="flex space-x-6 items-center">
-            <Link to="/" className="text-gray-600 hover:text-indigo-600">
-              Home
-            </Link>
             {isAuthenticated && (
-              <Link to="/categories" className="text-gray-600 hover:text-indigo-600">
-                Categories
-              </Link>
+              <>
+                <Link to="/categories" className="text-gray-600 hover:text-indigo-600">
+                  Categories
+                </Link>
+                <Link to="/lobbies/create" className="text-gray-600 hover:text-indigo-600">
+                  Create Lobby
+                </Link>
+              </>
             )}
             {isAuthenticated ? (
               <div

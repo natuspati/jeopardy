@@ -1,9 +1,41 @@
 import { io, Socket } from 'socket.io-client';
 
-export function createSocket(namespace: string, query = {}): Socket {
-  return io(`http://localhost:8000/${namespace}`, {
+interface CreateSocketOptions {
+  url?: string;
+  namespace?: string;
+  lobbyId?: number;
+  accessToken?: string;
+  query?: { [key: string]: string | number };
+}
+
+export function createSocket({
+  url,
+  namespace = 'game',
+  lobbyId,
+  accessToken,
+  query = {},
+}: CreateSocketOptions): Socket {
+  const socketUrl = url || `http://localhost:8000/${namespace}`;
+
+  const finalQuery = { ...query };
+  if (lobbyId !== undefined) {
+    finalQuery.id = String(lobbyId);
+  }
+
+  const options: {
+    path: string;
+    transports: string[];
+    query: { [key: string]: string | number };
+    auth?: { token: string };
+  } = {
     path: '/ws',
     transports: ['websocket'],
-    query,
-  });
+    query: finalQuery,
+  };
+
+  if (accessToken) {
+    options.auth = { token: accessToken };
+  }
+
+  return io(socketUrl, options);
 }

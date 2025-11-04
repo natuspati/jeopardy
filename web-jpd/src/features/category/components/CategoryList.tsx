@@ -11,6 +11,7 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 const CategoryList = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showMineCategories, setShowMineCategories] = useState(false); // New state for "Mine" filter
   const { user } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
@@ -20,8 +21,18 @@ const CategoryList = () => {
 
     const fetchCategories = async () => {
       try {
+        const params: { name?: string; owner_id?: string; is_valid?: boolean } = {
+          name: searchTerm || undefined,
+        };
+
+        if (showMineCategories && user?.id) {
+          params.owner_id = String(user.id);
+        } else {
+          params.is_valid = true;
+        }
+
         const response = await api.get('/api/v1/category', {
-          params: { name: searchTerm || undefined },
+          params: params,
           signal: controller.signal,
         });
         const parsedCategories = z.array(CategorySchema).parse(response.data);
@@ -42,7 +53,7 @@ const CategoryList = () => {
     return () => {
       controller.abort();
     };
-  }, [searchTerm]);
+  }, [searchTerm, showMineCategories, user]); // Add showMineCategories and user to dependencies
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTerm = e.target.value;
@@ -50,6 +61,10 @@ const CategoryList = () => {
     if (newTerm.length > 0 && newTerm.length < 2) {
       setCategories([]);
     }
+  };
+
+  const handleToggleMineCategories = () => {
+    setShowMineCategories((prev) => !prev);
   };
 
   const confirmDeleteCategory = (category: Category) => {
@@ -81,13 +96,26 @@ const CategoryList = () => {
 
   return (
     <div>
-      <input
-        type="text"
-        placeholder="Search categories by name (2+ characters)..."
-        value={searchTerm}
-        onChange={handleSearchChange}
-        className="w-full p-2 border border-gray-300 rounded-md mb-4"
-      />
+      <div className="flex items-center mb-4">
+        <input
+          type="text"
+          placeholder="Search categories by name (2+ characters)..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="flex-grow p-2 border border-gray-300 rounded-md mr-4"
+        />
+        {user && ( // Only show "Mine" filter if user is logged in
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={showMineCategories}
+              onChange={handleToggleMineCategories}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            <span className="text-gray-900">Mine</span>
+          </label>
+        )}
+      </div>
       <div className="space-y-4">
         {categories.length > 0 ? (
           categories.map((category) => (

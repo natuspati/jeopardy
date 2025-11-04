@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { PromptTypeEnum } from '@/shared/enums';
 
+export const NoTZDateTimeSchema = z.string();
+
 export const BaseUserSchema = z.object({
   id: z.number(),
   username: z.string(),
@@ -29,5 +31,3 @@ export const BaseLobbyCategorySchema = z.object({
   lobby_id: z.number(),
   category_id: z.number(),
 });
-
-export type User = z.infer<typeof BaseUserSchema>;

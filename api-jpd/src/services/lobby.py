@@ -6,6 +6,7 @@ from enums.lobby import LobbyStateEnum
 from errors.auth import ForbiddenError
 from errors.request import BadRequestError, NotFoundError
 from repositories import LobbyRepo
+from schemas.category.base import CategorySearchSchema
 from schemas.lobby.base import (
     BaseLobbySchema,
     LobbyCreatePublicSchema,
@@ -41,7 +42,10 @@ class LobbyService:
         return await self._lobby_repo.filter(search)
 
     async def create_lobby(self, lobby: LobbyCreatePublicSchema, user_id: int) -> BaseLobbySchema:
-        categories = await self._category_service.search_categories(category_ids=lobby.category_ids)
+        categories = await self._category_service.search_categories(
+            category_ids=lobby.category_ids,
+            search=CategorySearchSchema(is_valid=True),
+        )
 
         missing_category_ids = {cat.id for cat in categories} - set(lobby.category_ids)
         if missing_category_ids:

@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from schemas.base import OneFieldSetMixin
+
 
 class BaseCategorySchema(BaseModel):
     id: int
@@ -13,3 +15,9 @@ class CategoryCreatePublicSchema(BaseModel):
 
 class CategoryCreateSchema(CategoryCreatePublicSchema):
     owner_id: int
+
+
+class CategorySearchSchema(BaseModel, OneFieldSetMixin):
+    name: str | None = Field(default=None, min_length=2, max_length=64)
+    is_valid: bool | None = None
+    owner_id: int | None = None

@@ -29,12 +29,15 @@ class CategoryRepo(RelationalRepoMixin):
         self,
         category_ids: list[int] | None = None,
         name: str | None = None,
+        owner_id: int | None = None,
     ) -> list[CategorySchema]:
         filters = []
         if category_ids:
             filters.append(CategoryModel.id.in_(category_ids))
         if name is not None:
             filters.append(CategoryModel.name.ilike(f"%{name}%"))
+        if owner_id is not None:
+            filters.append(CategoryModel.owner_id == owner_id)
 
         stmt = (
             select(CategoryModel)

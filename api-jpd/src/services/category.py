@@ -10,6 +10,7 @@ from schemas.category.base import (
     BaseCategorySchema,
     CategoryCreatePublicSchema,
     CategoryCreateSchema,
+    CategorySearchSchema,
 )
 from schemas.category.nested import CategorySchema, CategoryUpdateSchema
 from schemas.prompt.base import PromptOrderUpdateSchema
@@ -28,11 +29,22 @@ class CategoryService:
     async def search_categories(
         self,
         category_ids: list[int] | None = None,
-        name: str | None = None,
+        search: CategorySearchSchema | None = None,
     ) -> list[CategorySchema]:
-        if name is not None:
-            name = self._clean_search_term(name)
-        return await self._category_repo.filter(category_ids=category_ids, name=name)
+        if search and search.name is not None:
+            search.name = self._clean_search_term(search.name)
+
+        categories = await self._category_repo.filter(
+            category_ids=category_ids,
+            name=search.name if search else None,
+            owner_id=search.owner_id if search else None,
+        )
+
+        return (
+            [category for category in categories if category.is_valid is search.is_valid]
+            if search and search.is_valid is not None
+            else categories
+        )
 
     async def create_category(
         self,

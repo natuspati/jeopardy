@@ -33,7 +33,7 @@ const Login = () => {
       navigate('/');
     } catch (error: unknown) {
       if (error instanceof z.ZodError) {
-        setError(error.errors.map((e) => e.message).join(', '));
+        setError(error.issues.map((e) => e.message).join(', '));
       } else if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.detail || 'Invalid username or password');
       } else {
@@ -52,7 +52,7 @@ const Login = () => {
       handleLogin();
     } catch (error: unknown) {
       if (error instanceof z.ZodError) {
-        setError(error.errors.map((e) => e.message).join(', '));
+        setError(error.issues.map((e) => e.message).join(', '));
       } else if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.detail || 'Registration failed');
       } else {
@@ -68,14 +68,14 @@ const Login = () => {
         type="text"
         placeholder="Username"
         value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
         className="w-full p-2 border border-gray-300 rounded-md mb-2"
       />
       <input
         type="password"
         placeholder="Password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
         className="w-full p-2 border border-gray-300 rounded-md mb-4"
       />
       <button

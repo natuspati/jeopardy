@@ -8,6 +8,8 @@ const LobbyList = () => {
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const hasFetched = useRef(false);
 
+  // TODO: make listing lobbies always include started lobbies
+  // TODO: add container/component with mine lobbies
   useEffect(() => {
     const fetchLobbies = async () => {
       try {

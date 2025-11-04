@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from constants import MAX_CATEGORIES_IN_LOBBY, MIN_CATEGORIES_IN_LOBBY
 from enums.lobby import LobbyStateEnum
@@ -40,5 +40,5 @@ class LobbyStartedPublicSchema(BaseLobbySchema):
 
 class LobbySearchSchema(BaseModel):
     host_id: int | None = None
-    state: LobbyStateEnum = LobbyStateEnum.CREATED
+    states: list[LobbyStateEnum] = Field(default_factory=list)
     created_at: NoTZDateTime | None = None

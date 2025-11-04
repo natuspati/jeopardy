@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, Query, status
 
 from api.v1 import prompt
 from auth import authenticate_user
-from schemas.category.base import BaseCategorySchema, CategoryCreatePublicSchema
+from schemas.category.base import (
+    BaseCategorySchema,
+    CategoryCreatePublicSchema,
+    CategorySearchSchema,
+)
 from schemas.category.nested import CategorySchema, CategoryUpdateSchema
 from schemas.user.base import BaseUserSchema
 from services import CategoryService
@@ -15,10 +19,10 @@ router.include_router(prompt.router)
 
 @router.get("", response_model=list[CategorySchema])
 async def search_categories(
+    search: Annotated[CategorySearchSchema, Query()],
     category_service: Annotated[CategoryService, Depends()],
-    name: Annotated[str | None, Query(min_length=2, max_length=64)] = None,
 ):
-    return await category_service.search_categories(name=name)
+    return await category_service.search_categories(search=search)
 
 
 @router.get("/{category_id}", response_model=CategorySchema)

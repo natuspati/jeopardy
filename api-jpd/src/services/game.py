@@ -41,6 +41,8 @@ class GameService:
             players=[],
             categories=[CategoryInGameSchema(**cat.model_dump()) for cat in lobby.categories],
         )
+        self._adjust_prompt_scores(game)
+
         await self._game_repo.set_game(game)
         return game
 
@@ -139,3 +141,9 @@ class GameService:
 
         if prompt_id is not None:
             game.prompt_map[prompt_id].state = PromptStateEnum.NOT_SELECTED
+
+    @classmethod
+    def _adjust_prompt_scores(cls, game: GameSchema) -> None:
+        for category in game.categories:
+            for prompt in category.prompts:
+                prompt.score = prompt.score * prompt.order
