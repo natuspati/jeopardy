@@ -8,11 +8,12 @@ from fastapi import Depends
 from sqlalchemy import Executable
 from sqlalchemy.engine.interfaces import _CoreAnyExecuteParams
 from sqlalchemy.exc import DatabaseError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from configs import settings
 from constants import UnsetSentinel
 from errors.storage import COMMON_DB_ERRORS, DBError, RedisBaseError
-from storages import DBManager, RedisManager, get_db_manager, get_redis_manager
+from storages import RedisManager, get_db_session, get_redis_manager
 
 _logger = logging.getLogger(__name__)
 
@@ -20,43 +21,41 @@ _logger = logging.getLogger(__name__)
 class RelationalRepoMixin:
     def __init__(
         self,
-        db_manager: Annotated[DBManager, Depends(get_db_manager)],
+        session: Annotated[AsyncSession, Depends(get_db_session)],
     ):
-        self._manager = db_manager
+        self._manager = None
+        self._session = session
 
     async def execute(
         self,
         query: Executable,
         params: _CoreAnyExecuteParams | None = None,
     ) -> Any:
-        async with self._manager.session() as session:
-            try:
-                return await session.execute(query, params=params)
-            except COMMON_DB_ERRORS as error:
-                return self._handle_error(error, str(error))
+        try:
+            return await self._session.execute(query, params=params)
+        except COMMON_DB_ERRORS as error:
+            return self._handle_error(error, str(error))
 
     async def scalar(
         self,
         query: Executable,
         params: _CoreAnyExecuteParams | None = None,
     ) -> Any:
-        async with self._manager.session() as session:
-            try:
-                return await session.scalar(query, params=params)
-            except COMMON_DB_ERRORS as error:
-                return self._handle_error(error, str(query))
+        try:
+            return await self._session.scalar(query, params=params)
+        except COMMON_DB_ERRORS as error:
+            return self._handle_error(error, str(query))
 
     async def scalars(
         self,
         query: Executable,
         params: _CoreAnyExecuteParams | None = None,
     ) -> Sequence:
-        async with self._manager.session() as session:
-            try:
-                result = await session.scalars(query, params=params)
-            except COMMON_DB_ERRORS as error:
-                return self._handle_error(error, str(query))
-            return result.all()
+        try:
+            result = await self._session.scalars(query, params=params)
+        except COMMON_DB_ERRORS as error:
+            return self._handle_error(error, str(query))
+        return result.all()
 
     @classmethod
     def _handle_error(

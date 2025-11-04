@@ -68,7 +68,7 @@ class GameService:
             return
 
         unique_player_ids = set(game_update.add_player_ids)
-        existing_player_ids = unique_player_ids - set(game.player_map.keys())
+        existing_player_ids = unique_player_ids & set(game.player_map.keys())
         if existing_player_ids:
             raise BadRequestError(f"Players with IDs {existing_player_ids} already exist")
 

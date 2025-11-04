@@ -22,6 +22,7 @@ from schemas.game_event.error import GameErrorEvent, GameErrorPayloadSchema
 from schemas.game_event.start import GameStartedEvent
 from schemas.player import PlayerUpdateSchema
 from schemas.user.base import BaseUserSchema
+from services import GameService, UserService
 from services.dependencies import get_game_service, get_user_service
 
 _logger = logging.getLogger(__name__)
@@ -30,13 +31,39 @@ _logger = logging.getLogger(__name__)
 class GameNamespace(socketio.AsyncNamespace):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._game_service = get_game_service()
-        self._user_service = get_user_service()
 
     @handle_event_errors(emit_error=True, return_value=False)
     async def on_connect(self, sid: str, environ: dict[str, Any], auth: dict[str, Any]) -> bool:
+        async with get_user_service() as user_service, get_game_service() as game_service:
+            return await self._connect(
+                sid=sid,
+                environ=environ,
+                auth=auth,
+                game_service=game_service,
+                user_service=user_service,
+            )
+
+    @handle_event_errors(emit_error=False, return_value=None)
+    async def on_disconnect(self, sid: str, reason: str) -> None:
+        async with get_game_service() as game_service:
+            await self._disconnect(sid=sid, game_service=game_service)
+        _logger.info(f"Client {sid} disconnected, reason: {reason}.")
+
+    @handle_event_errors(emit_error=True, return_value=None)
+    async def on_game_start(self, sid: str) -> None:
+        async with get_game_service() as game_service:
+            await self._start_game(sid=sid, game_service=game_service)
+
+    async def _connect(
+        self,
+        sid: str,
+        environ: dict[str, Any],
+        auth: dict[str, Any],
+        game_service: GameService,
+        user_service: UserService,
+    ) -> bool:
         try:
-            user = await self._authenticate(auth)
+            user = await self._authenticate(auth, user_service=user_service)
         except UnauthorizedError as error:
             _logger.info(f"Client {sid} rejected: {error.detail}")
             await self._emit_error(error.detail, room=sid)
@@ -50,14 +77,19 @@ class GameNamespace(socketio.AsyncNamespace):
             return False
 
         try:
-            game = await self._game_service.get_game(game_id)
+            game = await self._get_game(game_id, game_service=game_service)
         except NotFoundError as error:
             _logger.info(f"Client {sid} rejected: no lobby with ID {game_id}")
             await self._emit_error(error.detail, room=sid)
             return False
 
         try:
-            game = await self._join_game(sid=sid, game=game, user=user)
+            game = await self._join_game(
+                sid=sid,
+                game=game,
+                user=user,
+                game_service=game_service,
+            )
         except ForbiddenError as error:
             _logger.info(f"Client {sid} rejected: {error.detail}")
             await self._emit_error(error.detail, room=sid)
@@ -67,36 +99,37 @@ class GameNamespace(socketio.AsyncNamespace):
         _logger.info(f"Client {sid} connected to game {game.id}")
         return True
 
-    @handle_event_errors(emit_error=False, return_value=None)
-    async def on_disconnect(self, sid: str, reason: str) -> None:
+    async def _disconnect(self, sid: str, game_service: GameService) -> None:
         session = await self._get_session(sid)
         if session.is_lead:
             game = await self._update_game(
                 session.game_id,
                 GameUpdateSchema(lead_state=LeadStateEnum.DISCONNECTED),
+                game_service=game_service,
             )
         else:
             game = await self._update_game(
                 session.game_id,
                 GameUpdateSchema(
                     update_players={
-                        session.player_id: PlayerUpdateSchema(state=PlayerStateEnum.DISCONNECTED),
+                        session.player_id: PlayerUpdateSchema(
+                            state=PlayerStateEnum.DISCONNECTED,
+                        ),
                     },
                 ),
+                game_service=game_service,
             )
 
         await self._emit_game_event(DisconnectEventSchema, game, skip_sid=sid)
-        _logger.info(f"Client {sid} disconnected, reason: {reason}.")
 
-    @handle_event_errors(emit_error=True, return_value=None)
-    async def on_game_start(self, sid: str) -> None:
+    async def _start_game(self, sid: str, game_service: GameService) -> None:
         session = await self._get_session(sid)
 
         if not session.is_lead:
             await self._emit_error("Only lead is authorized to start game", room=sid)
             return
 
-        game = await self._get_game(session.game_id)
+        game = await self._get_game(session.game_id, game_service=game_service)
 
         if game.state is not GameStateEnum.BEFORE_START:
             await self._emit_error("Game has been already started", room=sid)
@@ -109,14 +142,9 @@ class GameNamespace(socketio.AsyncNamespace):
         game = await self._update_game(
             session.game_id,
             GameUpdateSchema(state=GameStateEnum.SELECT_PLAYER),
+            game_service=game_service,
         )
         await self._emit_game_event(GameStartedEvent, game)
-
-    async def _authenticate(self, auth: dict[str, Any]) -> BaseUserSchema:
-        token = auth.get("token")
-        if not token:
-            raise UnauthorizedError("Missing authorization token")
-        return await authenticate_user(token=token, user_service=self._user_service)
 
     async def _join_game(
         self,
@@ -124,22 +152,28 @@ class GameNamespace(socketio.AsyncNamespace):
         sid: str,
         game: GameSchema,
         user: BaseUserSchema,
+        game_service: GameService,
     ) -> GameSchema:
         is_lead = False
 
         if game.player_map.get(user.id):
-            game = await self._rejoin_as_player(game, user)
+            game = await self._rejoin_as_player(game, user, game_service=game_service)
         elif user.id == game.lead.id:
-            game = await self._rejoin_as_lead(game)
+            game = await self._rejoin_as_lead(game, game_service=game_service)
             is_lead = True
         else:
-            game = await self._join_as_new_player(game, user)
+            game = await self._join_as_new_player(game, user, game_service=game_service)
 
         await self._set_session(sid=sid, game_id=game.id, player_id=user.id, is_lead=is_lead)
         await self.enter_room(sid=sid, room=self._get_room(game.id))
         return game
 
-    async def _rejoin_as_player(self, game: GameSchema, user: BaseUserSchema) -> GameSchema:
+    async def _rejoin_as_player(
+        self,
+        game: GameSchema,
+        user: BaseUserSchema,
+        game_service: GameService,
+    ) -> GameSchema:
         player = game.player_map[user.id]
         if player.state is PlayerStateEnum.CONNECTED:
             raise ForbiddenError(f"Player {player.id} is already connected")
@@ -151,29 +185,34 @@ class GameNamespace(socketio.AsyncNamespace):
                 GameUpdateSchema(
                     update_players={player.id: PlayerUpdateSchema(state=PlayerStateEnum.CONNECTED)},
                 ),
+                game_service=game_service,
             )
 
-    async def _rejoin_as_lead(self, game: GameSchema) -> GameSchema:
+    async def _rejoin_as_lead(self, game: GameSchema, game_service: GameService) -> GameSchema:
         if game.lead.state is LeadStateEnum.CONNECTED:
             raise ForbiddenError(f"Lead {game.lead.id} is already connected")
         else:
             game = await self._update_game(
                 game.id,
                 GameUpdateSchema(lead_state=LeadStateEnum.CONNECTED),
+                game_service=game_service,
             )
             return game
 
-    async def _join_as_new_player(self, game: GameSchema, user: BaseUserSchema) -> GameSchema:
+    async def _join_as_new_player(
+        self,
+        game: GameSchema,
+        user: BaseUserSchema,
+        game_service: GameService,
+    ) -> GameSchema:
         if game.state is GameStateEnum.BEFORE_START:
-            return await self._update_game(game.id, GameUpdateSchema(add_player_ids=[user.id]))
+            return await self._update_game(
+                game.id,
+                GameUpdateSchema(add_player_ids=[user.id]),
+                game_service=game_service,
+            )
         else:
             raise ForbiddenError(f"Game {game.id} has been started")
-
-    async def _get_game(self, game_id: int) -> GameSchema:
-        return await self._game_service.get_game(game_id)
-
-    async def _update_game(self, game_id: int, game_update: GameUpdateSchema) -> GameSchema:
-        return await self._game_service.update_game(game_id, game_update=game_update)
 
     async def _get_session(self, sid: str) -> GameSessionShema:
         async with self.session(sid) as session:
@@ -221,6 +260,26 @@ class GameNamespace(socketio.AsyncNamespace):
             room=room,
             skip_sid=skip_sid,
         )
+
+    @classmethod
+    async def _authenticate(cls, auth: dict[str, Any], user_service: UserService) -> BaseUserSchema:
+        token = auth.get("token")
+        if not token:
+            raise UnauthorizedError("Missing authorization token")
+        return await authenticate_user(token=token, user_service=user_service)
+
+    @classmethod
+    async def _get_game(cls, game_id: int, game_service: GameService) -> GameSchema:
+        return await game_service.get_game(game_id)
+
+    @classmethod
+    async def _update_game(
+        cls,
+        game_id: int,
+        game_update: GameUpdateSchema,
+        game_service: GameService,
+    ) -> GameSchema:
+        return await game_service.update_game(game_id, game_update=game_update)
 
     @classmethod
     def _get_room(cls, game_id: int) -> str:
